@@ -6,13 +6,12 @@ import dayjs from 'dayjs'
 import { EXPORT_TYPE } from './popup/config'
 import { IMemoResult, IMessage } from './popup/types'
 
-const DATE_FORMAT = 'YYYY-MM-DD_HH:mm:ss'
+const DATE_FORMAT = 'YYYY-MM-DD_HH-mm-ss'
 
 const MEMOS_SELECTOR = '#react-tabs-1 > div > div'
 
 export default defineContentScript({
-  // matches: ['*://*.okjike.com/*'],
-  matches: ['<all_urls>'],
+  matches: ['*://*.okjike.com/*'],
   cssInjectionMode: 'ui',
   main(ctx) {
     browser.runtime.onMessage.addListener(async function (message: IMessage) {
@@ -23,7 +22,7 @@ export default defineContentScript({
       ) as HTMLDivElement | null
       if (!initMemos) return
 
-      // 等待滚动
+      // 等待滚动，获取全部数据
       await autoScroll()
 
       const totalMemos = document.querySelector(
@@ -123,7 +122,7 @@ async function handleExport(memos: IMemoResult[]) {
   await Promise.all(filesTask)
 
   const result = await zip.generateAsync({ type: 'blob' })
-  FileSaver.saveAs(result, 'memos.zip')
+  FileSaver.saveAs(result, 'jike-export.zip')
 }
 
 function autoScroll(): Promise<boolean> {

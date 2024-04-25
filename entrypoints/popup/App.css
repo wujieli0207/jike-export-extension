@@ -9,6 +9,10 @@
   padding: 2em;
 }
 
+.button {
+  min-width: 160px;
+}
+
 .read-the-docs {
   color: #888;
 }

@@ -17,8 +17,6 @@ export default function App() {
   const handleExport = async () => {
     setIsClickExport(true)
 
-    // browser.runtime.sendMessage({ type: EXPORT_TYPE })
-
     browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
       const activeTab = tabs[0]
       const tid = activeTab.id ?? -1
@@ -33,14 +31,19 @@ export default function App() {
 
   return (
     <>
-      <h1>WXT + React</h1>
       <div className="card">
         {inJike ? (
-          <button onClick={handleExport}>
-            {isClickExport ? '导出中...' : '导出'}
+          <button
+            className="button"
+            disabled={isClickExport}
+            onClick={handleExport}
+          >
+            {isClickExport ? '导出中，完成后将自动下载...' : '导出'}
           </button>
         ) : (
           <button
+            className="button"
+            disabled={isClickExport}
             onClick={() =>
               browser.tabs.create({ url: 'https://web.okjike.com/' })
             }
@@ -48,13 +51,11 @@ export default function App() {
             去即刻中操作
           </button>
         )}
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
+        <p>需要进入即刻动态列表操作</p>
       </div>
-      <p className="read-the-docs">
+      {/* <p className="read-the-docs">
         Click on the WXT and React logos to learn more
-      </p>
+      </p> */}
     </>
   )
 }
