@@ -7,5 +7,6 @@ export interface IMessage {
 export interface IMemoResult {
   time: string
   content: string
+  quote: string // 回复动态
   files: string[]
 }

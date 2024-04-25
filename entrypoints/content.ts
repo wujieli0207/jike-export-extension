@@ -34,14 +34,23 @@ export default defineContentScript({
 
       // 数据二次处理
       const newMemoList = memoList.map((memo) => {
+        let content = memo.content
+
+        // 引用动态
+        if (memo.quote) {
+          content += `\n---\n引用动态：\n${memo.quote}`
+        }
+
         // 文件链接至 momo 中
+        if (memo.files.length > 0) {
+          content += `\n${memo.files
+            .map((_item, i) => `\n![image](images/${memo.time}_${i + 1}.png)`)
+            .join('\n')}`
+        }
+
         return {
           ...memo,
-          content:
-            memo.content +
-            `\n${memo.files
-              .map((_item, i) => `\n![image](images/${memo.time}_${i + 1}.png)`)
-              .join('\n')}`,
+          content,
         }
       })
 
@@ -75,7 +84,12 @@ function getMemos(memos: HTMLDivElement) {
     const imageEl = memoEl.querySelector('[class*="MessagePictureGrid"] > img')
     const imgSrcList = [imageEl?.getAttribute('src') ?? '']
 
-    memoResultList.push({ time, content, files: imgSrcList })
+    // 引用动态
+    const quoteEl = memoEl.querySelector('[class*="RepostContent__StyledText"]')
+    const quoteHTML = quoteEl?.innerHTML ?? ''
+    const quote = quoteHTML
+
+    memoResultList.push({ time, content, quote, files: imgSrcList })
   }
 
   return memoResultList
