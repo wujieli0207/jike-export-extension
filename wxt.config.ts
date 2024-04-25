@@ -6,14 +6,20 @@ export default defineConfig({
   vite: () => ({
     plugins: [react()],
   }),
-  // manifest: {
-  //   permissions: ['storage', 'tabs'],
-  //   content_scripts: [
-  //     {
-  //       matches: ['*://*.okjike.com/*'],
-  //       js: ['content-scripts/content.js'],
-  //     },
-  //   ],
-  //   host_permissions: ['*://*.okjike.com/*'],
-  // },
+  manifest: {
+    permissions: [
+      'storage',
+      'tabs',
+      'webRequest',
+      '<all_urls>',
+      'webRequestBlocking',
+    ],
+    // content_scripts: [
+    //   {
+    //     matches: ['*://*.okjike.com/*'],
+    //     js: ['content-scripts/content.js'],
+    //   },
+    // ],
+    // host_permissions: ['*://*.okjike.com/*'],
+  },
 })
