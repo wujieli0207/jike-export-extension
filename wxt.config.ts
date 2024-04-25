@@ -8,5 +8,7 @@ export default defineConfig({
   }),
   manifest: {
     permissions: ['tabs'],
+    name: '即刻导出',
+    description: '导出即刻动态为本地文件',
   },
 })
