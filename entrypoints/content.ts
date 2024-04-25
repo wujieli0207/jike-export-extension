@@ -8,6 +8,8 @@ import { IMemoResult, IMessage } from './popup/types'
 
 const DATE_FORMAT = 'YYYY-MM-DD_HH:mm:ss'
 
+const MEMOS_SELECTOR = '#react-tabs-1 > div > div'
+
 export default defineContentScript({
   // matches: ['*://*.okjike.com/*'],
   matches: ['<all_urls>'],
@@ -16,12 +18,20 @@ export default defineContentScript({
     browser.runtime.onMessage.addListener(async function (message: IMessage) {
       if (message.type !== EXPORT_TYPE) return
 
-      const memos = document.querySelector(
-        '#react-tabs-1 > div > div'
+      const initMemos = document.querySelector(
+        MEMOS_SELECTOR
       ) as HTMLDivElement | null
-      if (!memos) return
+      if (!initMemos) return
 
-      const memoList = getMemos(memos)
+      // 等待滚动
+      await autoScroll()
+
+      const totalMemos = document.querySelector(
+        MEMOS_SELECTOR
+      ) as HTMLDivElement | null
+      if (!totalMemos) return
+
+      const memoList = getMemos(totalMemos)
 
       // 数据二次处理
       const newMemoList = memoList.map((memo) => {
@@ -114,4 +124,28 @@ async function handleExport(memos: IMemoResult[]) {
 
   const result = await zip.generateAsync({ type: 'blob' })
   FileSaver.saveAs(result, 'memos.zip')
+}
+
+function autoScroll(): Promise<boolean> {
+  return new Promise((resolve, reject) => {
+    const isScrollBottom = () => {
+      const result = document.querySelector(
+        '[class*="LoadingIndicator__Container"]'
+      )
+      return result === null
+    }
+
+    const scrollBottom = () => {
+      window.scrollTo(0, document.body.scrollHeight)
+    }
+
+    const intervalId = setInterval(() => {
+      if (isScrollBottom()) {
+        clearInterval(intervalId)
+        resolve(true)
+      } else {
+        scrollBottom()
+      }
+    }, 1 * 1000)
+  })
 }
