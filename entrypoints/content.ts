@@ -41,6 +41,11 @@ export default defineContentScript({
           content += `\n\n[原动态链接](${memo.memoLink})`
         }
 
+        // 所属圈子
+        if (memo.memoCircle) {
+          content += `\n\n圈子: [${memo.memoCircle.title}](${memo.memoCircle.url})`
+        }
+
         // 引用动态
         if (memo.quote) {
           content += `\n\n---\n\n> 引用动态：\n\n${memo.quote}`
@@ -102,11 +107,27 @@ function getMemos(memos: HTMLDivElement) {
     const memoHref = memoLinkEl.getAttribute('href') ?? ''
     const memoLink = memoHref ? getJikeUrl(memoHref) : ''
 
+    // 动态圈子
+    const memoCircleEl = memoEl.querySelector(
+      'article div:nth-child(2) div:nth-child(3) a'
+    )
+    const memoCircleHref = memoCircleEl?.getAttribute('href') ?? ''
+    const memoCircleLink = memoCircleHref ? getJikeUrl(memoCircleHref) : ''
+    const memoCircleText =
+      (memoCircleEl?.textContent || memoCircleEl?.textContent) ?? ''
+
     memoResultList.push({
       time,
       content,
       quote,
       memoLink,
+      memoCircle:
+        memoCircleLink && memoCircleText
+          ? {
+              title: memoCircleText,
+              url: memoCircleLink,
+            }
+          : null,
       files: imgSrcList,
     })
   }
@@ -183,5 +204,5 @@ function autoScroll(): Promise<boolean> {
 }
 
 function getJikeUrl(subUrl: string) {
-  return `https://web.okjike.com/${subUrl}`
+  return `https://web.okjike.com${subUrl}`
 }
