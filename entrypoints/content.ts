@@ -43,7 +43,7 @@ export default defineContentScript({
 
         // 引用动态
         if (memo.quote) {
-          content += `\n---\n引用动态：\n${memo.quote}`
+          content += `\n\n---\n\n> 引用动态：\n\n${memo.quote}`
         }
 
         // 文件链接至 momo 中
@@ -87,7 +87,9 @@ function getMemos(memos: HTMLDivElement) {
 
     // 图片
     const imageEl = memoEl.querySelector('[class*="MessagePictureGrid"] > img')
-    const imgSrcList = [imageEl?.getAttribute('src') ?? '']
+    const imgSrcList = imageEl?.getAttribute('src')
+      ? [imageEl?.getAttribute('src') as string]
+      : []
 
     // 引用动态
     const quoteEl = memoEl.querySelector('[class*="RepostContent__StyledText"]')
