@@ -8,5 +8,6 @@ export interface IMemoResult {
   time: string
   content: string
   quote: string // 回复动态
+  memoLink: string
   files: string[]
 }

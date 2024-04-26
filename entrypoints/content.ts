@@ -36,6 +36,11 @@ export default defineContentScript({
       const newMemoList = memoList.map((memo) => {
         let content = memo.content
 
+        // 动态链接
+        if (memo.memoLink) {
+          content += `\n\n[原动态链接](${memo.memoLink})`
+        }
+
         // 引用动态
         if (memo.quote) {
           content += `\n---\n引用动态：\n${memo.quote}`
@@ -89,7 +94,19 @@ function getMemos(memos: HTMLDivElement) {
     const quoteHTML = quoteEl?.innerHTML ?? ''
     const quote = quoteHTML
 
-    memoResultList.push({ time, content, quote, files: imgSrcList })
+    // 动态链接
+    const memoLinkEl = memoEl.querySelector('article time')
+      ?.parentNode as HTMLAnchorElement
+    const memoHref = memoLinkEl.getAttribute('href') ?? ''
+    const memoLink = memoHref ? getJikeUrl(memoHref) : ''
+
+    memoResultList.push({
+      time,
+      content,
+      quote,
+      memoLink,
+      files: imgSrcList,
+    })
   }
 
   return memoResultList
@@ -161,4 +178,8 @@ function autoScroll(): Promise<boolean> {
       }
     }, 1 * 1000)
   })
+}
+
+function getJikeUrl(subUrl: string) {
+  return `https://web.okjike.com/${subUrl}`
 }
