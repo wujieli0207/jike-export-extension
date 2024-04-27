@@ -8,7 +8,7 @@ export interface IMessage {
   type: typeof EXPORT_TYPE
 }
 
-export interface IMemoCircle {
+export interface ILink {
   title: string
   url: string
 }
@@ -17,7 +17,8 @@ export interface IMemoResult {
   time: string
   content: string
   quote: string // 回复动态
+  quoteCircle: ILink | null // 回复动态的圈子
   memoLink: string
-  memoCircle: IMemoCircle | null
+  memoCircle: ILink | null
   files: string[]
 }

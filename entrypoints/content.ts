@@ -50,6 +50,10 @@ export default defineContentScript({
         if (memo.quote) {
           content += `\n\n---\n\n> 引用动态：\n\n${memo.quote}`
         }
+        // 引用动态的圈子
+        if (memo.quoteCircle) {
+          content += `\n\n引用动态圈子: [${memo.quoteCircle.title}](${memo.quoteCircle.url})`
+        }
 
         // 文件链接至 momo 中
         if (memo.files.length > 0) {
@@ -100,6 +104,13 @@ function getMemos(memos: HTMLDivElement) {
     const quoteEl = memoEl.querySelector('[class*="RepostContent__StyledText"]')
     const quoteHTML = quoteEl?.innerHTML ?? ''
     const quote = quoteHTML
+    // 引用动态所属圈子
+    const quoteCircleEl = memoEl.querySelector(
+      '[class*="RepostContent__TopicText"]'
+    )
+    const quoteCircleHref = quoteCircleEl?.getAttribute('href') ?? ''
+    const quoteCircleLink = quoteCircleHref ? getJikeUrl(quoteCircleHref) : ''
+    const quoteCircleText = quoteCircleEl?.innerHTML ?? ''
 
     // 动态链接
     const memoLinkEl = memoEl.querySelector('article time')
@@ -120,6 +131,13 @@ function getMemos(memos: HTMLDivElement) {
       time,
       content,
       quote,
+      quoteCircle:
+        quoteCircleLink && quoteCircleText
+          ? {
+              title: quoteCircleText,
+              url: quoteCircleLink,
+            }
+          : null,
       memoLink,
       memoCircle:
         memoCircleLink && memoCircleText
