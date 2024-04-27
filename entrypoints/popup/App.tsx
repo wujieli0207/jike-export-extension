@@ -1,17 +1,27 @@
 import './App.css'
 import { useEffect, useState } from 'react'
 import { browser } from 'wxt/browser'
+import { Button, Checkbox, Divider, Form, FormProps, Input } from 'antd'
 import { EXPORT_TYPE, JIKE_URL } from './config'
+import { getUserInfo } from './utils'
+
+type FieldType = {
+  activateCode?: string
+}
 
 export default function App() {
   const [isClickExport, setIsClickExport] = useState(false)
   const [inJike, setIsInJike] = useState(false)
 
   useEffect(() => {
+    // 判断是不是在即刻中
     browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
       const url = tabs[0].url ?? ''
       setIsInJike(url.includes(JIKE_URL))
     })
+
+    // 获取用户信息
+    getUserInfo()
   }, [])
 
   const handleExport = async () => {
@@ -29,33 +39,95 @@ export default function App() {
     })
   }
 
+  const onFinish: FormProps<FieldType>['onFinish'] = (values) => {
+    console.log('Success:', values)
+  }
+
+  const onFinishFailed: FormProps<FieldType>['onFinishFailed'] = (
+    errorInfo
+  ) => {
+    console.log('Failed:', errorInfo)
+  }
+
   return (
     <>
-      <div className="card">
-        {inJike ? (
-          <button
-            className="button"
-            disabled={isClickExport}
-            onClick={handleExport}
+      <Form
+        name="basic"
+        labelCol={{ span: 8 }}
+        wrapperCol={{ span: 16 }}
+        style={{ maxWidth: 600 }}
+        initialValues={{ remember: true }}
+        autoComplete="off"
+      >
+        <Form.Item<FieldType>
+          name="activateCode"
+          rules={[{ required: true, message: '请输入激活码!' }]}
+        >
+          {inJike ? (
+            <Button type="primary" className="button" onClick={handleExport}>
+              {isClickExport ? '导出中，完成后将自动下载...' : '导出'}
+            </Button>
+          ) : (
+            <Button
+              type="primary"
+              className="button"
+              onClick={() =>
+                browser.tabs.create({ url: 'https://web.okjike.com/' })
+              }
+            >
+              去即刻动态中操作
+            </Button>
+          )}
+        </Form.Item>
+
+        <Form.Item>
+          <Checkbox disabled={true}>导出为单文件（Coming soon）</Checkbox>
+        </Form.Item>
+      </Form>
+
+      <Divider />
+
+      <span>未激活仅支持导出 50 条即刻动态</span>
+      <p className="read-the-docs">
+        <Form
+          name="basic"
+          labelCol={{ span: 8 }}
+          wrapperCol={{ span: 16 }}
+          style={{ maxWidth: 600 }}
+          initialValues={{ remember: true }}
+          onFinish={onFinish}
+          onFinishFailed={onFinishFailed}
+          autoComplete="off"
+        >
+          <Form.Item<FieldType>
+            name="activateCode"
+            rules={[{ required: true, message: '请输入激活码!' }]}
           >
-            {isClickExport ? '导出中，完成后将自动下载...' : '导出'}
-          </button>
-        ) : (
-          <button
-            className="button"
-            disabled={isClickExport}
-            onClick={() =>
-              browser.tabs.create({ url: 'https://web.okjike.com/' })
-            }
-          >
-            去即刻中操作
-          </button>
-        )}
-        <p>需要进入即刻动态列表操作</p>
-      </div>
-      {/* <p className="read-the-docs">
-        Click on the WXT and React logos to learn more
-      </p> */}
+            <Input placeholder="请输入激活码" />
+          </Form.Item>
+
+          <Form.Item wrapperCol={{ span: 24 }}>
+            <Button
+              disabled={true}
+              type="default"
+              htmlType="submit"
+              className="button"
+            >
+              激活（coming soon）
+            </Button>
+          </Form.Item>
+          <Form.Item wrapperCol={{ span: 24 }}>
+            <Button
+              disabled={true}
+              type="link"
+              htmlType="submit"
+              className="button"
+            >
+              获取激活码（coming soon）
+            </Button>
+          </Form.Item>
+        </Form>
+      </p>
     </>
   )
 }

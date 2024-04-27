@@ -7,7 +7,7 @@ export default defineConfig({
     plugins: [react()],
   }),
   manifest: {
-    permissions: ['tabs'],
+    permissions: ['tabs', 'storage'],
     name: '即刻导出',
     description: '导出即刻动态为本地文件',
   },

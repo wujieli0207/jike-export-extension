@@ -16,6 +16,7 @@
     "postinstall": "wxt prepare"
   },
   "dependencies": {
+    "antd": "^5.16.4",
     "dayjs": "^1.11.10",
     "file-saver": "^2.0.5",
     "html-to-md": "^0.8.5",
