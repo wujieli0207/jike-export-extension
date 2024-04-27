@@ -4,6 +4,7 @@ import { browser } from 'wxt/browser'
 import { Button, Checkbox, Divider, Form, FormProps, Input } from 'antd'
 import { EXPORT_TYPE, JIKE_URL } from './config'
 import { getUserInfo } from './utils'
+import { IExportConfig } from './types'
 
 type FieldType = {
   activateCode?: string
@@ -12,6 +13,10 @@ type FieldType = {
 export default function App() {
   const [isClickExport, setIsClickExport] = useState(false)
   const [inJike, setIsInJike] = useState(false)
+
+  const [exportConfig, setExportConfig] = useState<IExportConfig>({
+    isSingleFile: false,
+  })
 
   useEffect(() => {
     // 判断是不是在即刻中
@@ -34,6 +39,9 @@ export default function App() {
       if (activeTab && tid > 0) {
         browser.runtime.sendMessage({
           type: EXPORT_TYPE,
+          config: {
+            ...exportConfig,
+          },
         })
       }
     })
@@ -81,7 +89,17 @@ export default function App() {
         </Form.Item>
 
         <Form.Item>
-          <Checkbox disabled={true}>导出为单文件（Coming soon）</Checkbox>
+          <Checkbox
+            value={exportConfig.isSingleFile}
+            onChange={(e) =>
+              setExportConfig({
+                ...exportConfig,
+                isSingleFile: e.target.checked,
+              })
+            }
+          >
+            导出为单文件
+          </Checkbox>
         </Form.Item>
       </Form>
 

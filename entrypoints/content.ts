@@ -6,7 +6,8 @@ import dayjs from 'dayjs'
 import { EXPORT_TYPE } from './popup/config'
 import { IMemoResult, IMessage } from './popup/types'
 
-const DATE_FORMAT = 'YYYY-MM-DD_HH-mm-ss'
+const FILE_DATE_FORMAT = 'YYYY-MM-DD_HH-mm-ss'
+const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss'
 
 const MEMOS_SELECTOR = '#react-tabs-1 > div > div'
 
@@ -30,6 +31,7 @@ export default defineContentScript({
       ) as HTMLDivElement | null
       if (!totalMemos) return
 
+      const author = getAuthor()
       const memoList = getMemos(totalMemos)
 
       // 数据二次处理
@@ -69,10 +71,18 @@ export default defineContentScript({
       })
 
       // 下载笔记
-      handleExport(newMemoList)
+      message.config.isSingleFile
+        ? handleExportAsSingleFile(newMemoList, author)
+        : handleExportAsMultiFile(newMemoList, author)
     })
   },
 })
+
+function getAuthor() {
+  const authorEl = document.querySelector('h2')
+  const author = authorEl?.innerHTML ?? ''
+  return author
+}
 
 function getMemos(memos: HTMLDivElement) {
   const memosElList = memos.children
@@ -86,7 +96,7 @@ function getMemos(memos: HTMLDivElement) {
     // 时间
     const timeEl = memoEl.querySelector('time')
     const time = dayjs(timeEl?.getAttribute('datetime') ?? '').format(
-      DATE_FORMAT
+      FILE_DATE_FORMAT
     )
 
     // content
@@ -167,7 +177,7 @@ function handleHtmlToMd(htmlString: string) {
   return result
 }
 
-async function handleExport(memos: IMemoResult[]) {
+async function handleExportAsMultiFile(memos: IMemoResult[], fileName: string) {
   const zip = new Jszip()
 
   // 文件下载任务
@@ -194,7 +204,56 @@ async function handleExport(memos: IMemoResult[]) {
   await Promise.all(filesTask)
 
   const result = await zip.generateAsync({ type: 'blob' })
-  FileSaver.saveAs(result, 'jike-export.zip')
+  FileSaver.saveAs(result, `${fileName}.zip`)
+}
+
+async function handleExportAsSingleFile(
+  memos: IMemoResult[],
+  fileName: string
+) {
+  const zip = new Jszip()
+
+  // 文件下载任务
+  const filesTask: Promise<void>[] = []
+
+  // 完成内容
+  let resultContent = ''
+
+  memos.forEach((memo) => {
+    const content = memo.content
+    resultContent += `\n\n## ${dayjs(
+      memo.time
+        .split('_')
+        .map((item, index) => {
+          if (index === 1) {
+            return item.replaceAll('-', ':')
+          } else {
+            return item
+          }
+        })
+        .join(' ')
+    ).format(DATE_FORMAT)}\n\n${content}\n\n`
+
+    // 下载图片
+    memo.files.forEach((url, i) => {
+      if (url) {
+        const promise = fetch(url)
+          .then((res) => res.blob())
+          .then((blob) => {
+            zip.file(`images/${memo.time}_${i + 1}.png`, blob)
+          })
+        filesTask.push(promise)
+      }
+    })
+  })
+
+  // 完成所有图片下载任务
+  await Promise.all(filesTask)
+
+  zip.file(`${fileName}.md`, resultContent)
+
+  const result = await zip.generateAsync({ type: 'blob' })
+  FileSaver.saveAs(result, `${fileName}.zip`)
 }
 
 function autoScroll(): Promise<boolean> {
