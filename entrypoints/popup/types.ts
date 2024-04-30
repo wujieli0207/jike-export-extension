@@ -1,7 +1,8 @@
 import { EXPORT_TYPE } from './config'
 
-export interface IUserInfo {
-  isVerify: true // 是否输入验证码，默认为 false
+export interface IVerifyResult {
+  isVerified: boolean // 是否通过密钥验证通过
+  verifiedLisence: string // 验证通过后的密钥
 }
 
 export interface IExportConfig {
@@ -10,6 +11,7 @@ export interface IExportConfig {
 
 export interface IMessage {
   type: typeof EXPORT_TYPE
+  isVerified: boolean // 是否通过密钥验证通过
   config: IExportConfig
 }
 

@@ -1,8 +1,50 @@
-const USER_INFO_KEY = 'local:userInfo'
+import { NEW_LICENSE_KEY, VERIFY_RESULT } from './config'
+import { IVerifyResult } from './types'
 
+// 获取输入的 lincense key
+export async function getNewLicenseKey() {
+  const newLicenseKey = await storage.getItem<string>(NEW_LICENSE_KEY)
+  return newLicenseKey
+}
+
+// 获取验证结果
 export async function getUserInfo() {
-  await storage.setItem(USER_INFO_KEY, '123')
+  // 输入的密钥
+  const newLicenseKey = await getNewLicenseKey()
+  console.log('getUserInfo newLicenseKey: ', newLicenseKey)
+  // 验证信息
+  const verifiedResult = await storage.getItem<IVerifyResult>(VERIFY_RESULT)
+  console.log('getUserInfo verifiedResult: ', verifiedResult)
 
-  const userInfo = await storage.getItem(USER_INFO_KEY)
-  console.log('userInfo: ', userInfo)
+  let isVerified = verifiedResult?.isVerified ?? false
+
+  // 如果输入的密钥和验证的密钥不同，需要调用服务请求验证
+  if (newLicenseKey && verifiedResult?.verifiedLisence !== newLicenseKey) {
+    try {
+      const response = await fetch(
+        'https://api.lemonsqueezy.com/v1/licenses/validate',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            license_key: newLicenseKey,
+          }),
+        }
+      )
+      const result = await response.json() // 可以使用这个来进行额外的操作
+
+      isVerified = result.valid
+
+      storage.setItem<IVerifyResult>(VERIFY_RESULT, {
+        isVerified: !!result.valid,
+        verifiedLisence: result.license_key?.key ?? '',
+      })
+    } catch (error) {
+      console.error('error: ', error)
+    }
+  }
+
+  return isVerified
 }

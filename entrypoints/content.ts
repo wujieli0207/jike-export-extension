@@ -18,13 +18,15 @@ export default defineContentScript({
     browser.runtime.onMessage.addListener(async function (message: IMessage) {
       if (message.type !== EXPORT_TYPE) return
 
+      const isVerified = message.isVerified
+
       const initMemos = document.querySelector(
         MEMOS_SELECTOR
       ) as HTMLDivElement | null
       if (!initMemos) return
 
       // 等待滚动，获取全部数据
-      await autoScroll()
+      await autoScroll(isVerified)
 
       const totalMemos = document.querySelector(
         MEMOS_SELECTOR
@@ -32,43 +34,46 @@ export default defineContentScript({
       if (!totalMemos) return
 
       const author = getAuthor()
-      const memoList = getMemos(totalMemos)
+      const memoList = await getMemos(totalMemos)
 
       // 数据二次处理
-      const newMemoList = memoList.map((memo) => {
-        let content = memo.content
+      // 未激活场景只取前 50 条
+      const newMemoList = (isVerified ? memoList : memoList.slice(0, 50)).map(
+        (memo) => {
+          let content = memo.content
 
-        // 动态链接
-        if (memo.memoLink) {
-          content += `\n\n[原动态链接](${memo.memoLink})`
-        }
+          // 动态链接
+          if (memo.memoLink) {
+            content += `\n\n[原动态链接](${memo.memoLink})`
+          }
 
-        // 所属圈子
-        if (memo.memoCircle) {
-          content += `\n\n圈子: [${memo.memoCircle.title}](${memo.memoCircle.url})`
-        }
+          // 所属圈子
+          if (memo.memoCircle) {
+            content += `\n\n圈子: [${memo.memoCircle.title}](${memo.memoCircle.url})`
+          }
 
-        // 引用动态
-        if (memo.quote) {
-          content += `\n\n---\n\n> 引用动态：\n\n${memo.quote}`
-        }
-        // 引用动态的圈子
-        if (memo.quoteCircle) {
-          content += `\n\n引用动态圈子: [${memo.quoteCircle.title}](${memo.quoteCircle.url})`
-        }
+          // 引用动态
+          if (memo.quote) {
+            content += `\n\n---\n\n> 引用动态：\n\n${memo.quote}`
+          }
+          // 引用动态的圈子
+          if (memo.quoteCircle) {
+            content += `\n\n引用动态圈子: [${memo.quoteCircle.title}](${memo.quoteCircle.url})`
+          }
 
-        // 文件链接至 momo 中
-        if (memo.files.length > 0) {
-          content += `\n${memo.files
-            .map((_item, i) => `\n![image](images/${memo.time}_${i + 1}.png)`)
-            .join('\n')}`
-        }
+          // 文件链接至 momo 中
+          if (memo.files.length > 0) {
+            content += `\n${memo.files
+              .map((_item, i) => `\n![image](images/${memo.time}_${i + 1}.png)`)
+              .join('\n')}`
+          }
 
-        return {
-          ...memo,
-          content,
+          return {
+            ...memo,
+            content,
+          }
         }
-      })
+      )
 
       // 下载笔记
       message.config.isSingleFile
@@ -84,13 +89,13 @@ function getAuthor() {
   return author
 }
 
-function getMemos(memos: HTMLDivElement) {
+async function getMemos(memos: HTMLDivElement) {
   const memosElList = memos.children
 
   const memoResultList: IMemoResult[] = []
 
-  for (let i = 0; i < memosElList.length; i++) {
-    // for (let i = 0; i < 2; i++) {
+  // for (let i = 0; i < memosElList.length; i++) {
+  for (let i = 0; i < 2; i++) {
     const memoEl = memosElList[i] as HTMLDivElement
 
     // 时间
@@ -104,13 +109,31 @@ function getMemos(memos: HTMLDivElement) {
     const contentHTML = contentEl?.innerHTML ?? ''
     const content = handleHtmlToMd(contentHTML)
 
-    // 图片
-    const imageEl = memoEl.querySelector('[class*="MessagePictureGrid"] > img')
-    const imgSrcList = imageEl?.getAttribute('src')
-      ? [imageEl?.getAttribute('src') as string]
-      : []
+    // ==== 图片 ====
+    const imgSrcList: string[] = []
+    const imageContainerEl = memoEl.querySelector(
+      '[class*="MessagePictureGrid"]'
+    )
+    // 单一图片
+    const singleImageEl = imageContainerEl?.querySelector('img')
+    if (singleImageEl) {
+      imgSrcList.push(singleImageEl.getAttribute('src') as string)
+    }
+    // ! TODO 多图片处理待开发
+    // // 多张图片
+    // const multiImageEl = imageContainerEl?.querySelectorAll(
+    //   '[class*="MessagePictureGrid__Cell"]'
+    // )
+    // if (multiImageEl && multiImageEl?.length > 0) {
+    //   const multiImageList = await processAllImages(
+    //     multiImageEl,
+    //     '.ril-image-current',
+    //     '.ril-close'
+    //   )
+    //   imgSrcList.push(...multiImageList)
+    // }
 
-    // 引用动态
+    // ==== 引用动态 ====
     const quoteEl = memoEl.querySelector('[class*="RepostContent__StyledText"]')
     const quoteHTML = quoteEl?.innerHTML ?? ''
     const quote = quoteHTML
@@ -122,13 +145,13 @@ function getMemos(memos: HTMLDivElement) {
     const quoteCircleLink = quoteCircleHref ? getJikeUrl(quoteCircleHref) : ''
     const quoteCircleText = quoteCircleEl?.innerHTML ?? ''
 
-    // 动态链接
+    // ==== 动态链接 ====
     const memoLinkEl = memoEl.querySelector('article time')
       ?.parentNode as HTMLAnchorElement
     const memoHref = memoLinkEl.getAttribute('href') ?? ''
     const memoLink = memoHref ? getJikeUrl(memoHref) : ''
 
-    // 动态圈子
+    // ==== 动态圈子 ===
     const memoCircleEl = memoEl.querySelector(
       'article div:nth-child(2) div:nth-child(3) a'
     )
@@ -256,7 +279,7 @@ async function handleExportAsSingleFile(
   FileSaver.saveAs(result, `${fileName}.zip`)
 }
 
-function autoScroll(): Promise<boolean> {
+function autoScroll(isVerified: boolean): Promise<boolean> {
   return new Promise((resolve, reject) => {
     const isScrollBottom = () => {
       const result = document.querySelector(
@@ -269,11 +292,24 @@ function autoScroll(): Promise<boolean> {
       window.scrollTo(0, document.body.scrollHeight)
     }
 
+    const quit = () => {
+      clearInterval(intervalId)
+      resolve(true)
+    }
+
+    // 标记在非激活的场景下，只用滚动 3 次就好
+    let scrollCount = 0
+
     const intervalId = setInterval(() => {
       if (isScrollBottom()) {
-        clearInterval(intervalId)
-        resolve(true)
+        quit()
       } else {
+        scrollCount += 1
+
+        if (!isVerified && scrollCount >= 3) {
+          quit()
+        }
+
         scrollBottom()
       }
     }, 1 * 1000)
@@ -282,4 +318,59 @@ function autoScroll(): Promise<boolean> {
 
 function getJikeUrl(subUrl: string) {
   return `https://web.okjike.com${subUrl}`
+}
+
+function clickAndGetImageSrc(
+  element: Element,
+  imgClass: string,
+  closeBtnClass: string
+) {
+  return new Promise((resolve, reject) => {
+    const clickEvent = new MouseEvent('click', {
+      view: window,
+      bubbles: true,
+      cancelable: true,
+    })
+
+    // 模拟弹窗点击事件
+    element.dispatchEvent(clickEvent)
+
+    function checkIfImageLoaded() {
+      const imgEl = document.querySelector(imgClass)
+      if (imgEl) {
+        resolve(imgEl.getAttribute('src')) // Resolve the promise with the image source
+        const closeModalEl = document.querySelector(closeBtnClass)
+        closeModalEl?.dispatchEvent(clickEvent) // Close the modal
+      } else {
+        setTimeout(checkIfImageLoaded, 500) // Poll every 500ms
+      }
+    }
+
+    // Start checking if the image is loaded after initial delay
+    setTimeout(checkIfImageLoaded, 1000)
+  })
+}
+
+// 获取动态中多图片
+async function processAllImages(
+  imageElements: NodeListOf<Element>,
+  imgClass: string,
+  closeBtnClass: string
+): Promise<string[]> {
+  const multiImageList: string[] = []
+
+  for (let i = 0; i < imageElements.length; i++) {
+    try {
+      const src = (await clickAndGetImageSrc(
+        imageElements[i],
+        imgClass,
+        closeBtnClass
+      )) as string
+      multiImageList.push(src)
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  return multiImageList
 }

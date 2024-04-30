@@ -1,18 +1,22 @@
 import './App.css'
 import { useEffect, useState } from 'react'
 import { browser } from 'wxt/browser'
+import { storage } from 'wxt/storage'
 import { Button, Checkbox, Divider, Form, FormProps, Input } from 'antd'
-import { EXPORT_TYPE, JIKE_URL } from './config'
-import { getUserInfo } from './utils'
-import { IExportConfig } from './types'
+import { EXPORT_TYPE, JIKE_URL, NEW_LICENSE_KEY } from './config'
+import { getNewLicenseKey, getUserInfo } from './utils'
+import { IExportConfig, IMessage } from './types'
 
 type FieldType = {
-  activateCode?: string
+  newLicenseKey?: string
 }
 
 export default function App() {
+  const [form] = Form.useForm()
+
   const [isClickExport, setIsClickExport] = useState(false)
   const [inJike, setIsInJike] = useState(false)
+  const [isVerified, setIsVerified] = useState<boolean | null>(false)
 
   const [exportConfig, setExportConfig] = useState<IExportConfig>({
     isSingleFile: false,
@@ -25,8 +29,18 @@ export default function App() {
       setIsInJike(url.includes(JIKE_URL))
     })
 
+    getNewLicenseKey().then((result) => {
+      console.log('getNewLicenseKey result: ', result)
+      if (result) {
+        form.setFieldValue('newLicenseKey', result)
+      }
+    })
+
     // 获取用户信息
-    getUserInfo()
+    getUserInfo().then((result: boolean) => {
+      console.log('getUserInfo result: ', result)
+      setIsVerified(result)
+    })
   }, [])
 
   const handleExport = async () => {
@@ -37,18 +51,28 @@ export default function App() {
       const tid = activeTab.id ?? -1
 
       if (activeTab && tid > 0) {
-        browser.runtime.sendMessage({
+        const message: IMessage = {
           type: EXPORT_TYPE,
+          isVerified: !!isVerified,
           config: {
             ...exportConfig,
           },
-        })
+        }
+        browser.runtime.sendMessage(message)
       }
     })
   }
 
-  const onFinish: FormProps<FieldType>['onFinish'] = (values) => {
+  const onFinish: FormProps<FieldType>['onFinish'] = async (values) => {
     console.log('Success:', values)
+    const result = await storage.setItem(NEW_LICENSE_KEY, values.newLicenseKey)
+    console.log('onFinish result: ', result)
+
+    // 更新状态
+    setIsVerified(null)
+    getUserInfo().then((result: boolean) => {
+      setIsVerified(result)
+    })
   }
 
   const onFinishFailed: FormProps<FieldType>['onFinishFailed'] = (
@@ -67,10 +91,7 @@ export default function App() {
         initialValues={{ remember: true }}
         autoComplete="off"
       >
-        <Form.Item<FieldType>
-          name="activateCode"
-          rules={[{ required: true, message: '请输入激活码!' }]}
-        >
+        <Form.Item>
           {inJike ? (
             <Button type="primary" className="button" onClick={handleExport}>
               {isClickExport ? '导出中，完成后将自动下载...' : '导出'}
@@ -90,7 +111,7 @@ export default function App() {
 
         <Form.Item>
           <Checkbox
-            value={exportConfig.isSingleFile}
+            checked={exportConfig.isSingleFile}
             onChange={(e) =>
               setExportConfig({
                 ...exportConfig,
@@ -105,10 +126,14 @@ export default function App() {
 
       <Divider />
 
-      <span>未激活仅支持导出 50 条即刻动态</span>
+      <span>
+        {isVerified
+          ? '您已激活，支持导出全部动态'
+          : '未激活仅支持导出 50 条即刻动态'}
+      </span>
       <p className="read-the-docs">
         <Form
-          name="basic"
+          form={form}
           labelCol={{ span: 8 }}
           wrapperCol={{ span: 16 }}
           style={{ maxWidth: 600 }}
@@ -118,30 +143,29 @@ export default function App() {
           autoComplete="off"
         >
           <Form.Item<FieldType>
-            name="activateCode"
+            name="newLicenseKey"
             rules={[{ required: true, message: '请输入激活码!' }]}
           >
             <Input placeholder="请输入激活码" />
           </Form.Item>
 
           <Form.Item wrapperCol={{ span: 24 }}>
-            <Button
-              disabled={true}
-              type="default"
-              htmlType="submit"
-              className="button"
-            >
-              激活（coming soon）
+            <Button type="default" htmlType="submit" className="button">
+              激活
             </Button>
           </Form.Item>
           <Form.Item wrapperCol={{ span: 24 }}>
             <Button
-              disabled={true}
               type="link"
               htmlType="submit"
               className="button"
+              onClick={() =>
+                window.open(
+                  'https://jike-export.lemonsqueezy.com/buy/702040dd-c006-464e-9cf3-2e200380d228' // 正式地址
+                )
+              }
             >
-              获取激活码（coming soon）
+              获取激活码
             </Button>
           </Form.Item>
         </Form>

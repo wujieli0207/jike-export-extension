@@ -5,7 +5,7 @@ export default defineBackground(() => {
   browser.runtime.onMessage.addListener(function (requset) {
     browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
       const activeTab = tabs[0]
-      const tid = activeTab.id ?? -1
+      const tid = activeTab?.id ?? -1
 
       if (activeTab && tid > 0) {
         browser.tabs.sendMessage(tid, requset)
