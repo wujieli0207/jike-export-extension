@@ -94,8 +94,7 @@ async function getMemos(memos: HTMLDivElement) {
 
   const memoResultList: IMemoResult[] = []
 
-  // for (let i = 0; i < memosElList.length; i++) {
-  for (let i = 0; i < 2; i++) {
+  for (let i = 0; i < memosElList.length; i++) {
     const memoEl = memosElList[i] as HTMLDivElement
 
     // 时间
@@ -119,19 +118,14 @@ async function getMemos(memos: HTMLDivElement) {
     if (singleImageEl) {
       imgSrcList.push(singleImageEl.getAttribute('src') as string)
     }
-    // ! TODO 多图片处理待开发
-    // // 多张图片
-    // const multiImageEl = imageContainerEl?.querySelectorAll(
-    //   '[class*="MessagePictureGrid__Cell"]'
-    // )
-    // if (multiImageEl && multiImageEl?.length > 0) {
-    //   const multiImageList = await processAllImages(
-    //     multiImageEl,
-    //     '.ril-image-current',
-    //     '.ril-close'
-    //   )
-    //   imgSrcList.push(...multiImageList)
-    // }
+    // 多张图片
+    const multiImageEl = imageContainerEl?.querySelectorAll(
+      '[class*="MessagePictureGrid__Cell"]'
+    )
+    if (multiImageEl && multiImageEl?.length > 0) {
+      const multiImageList = await processAllImages(multiImageEl)
+      imgSrcList.push(...multiImageList)
+    }
 
     // ==== 引用动态 ====
     const quoteEl = memoEl.querySelector('[class*="RepostContent__StyledText"]')
@@ -320,53 +314,25 @@ function getJikeUrl(subUrl: string) {
   return `https://web.okjike.com${subUrl}`
 }
 
-function clickAndGetImageSrc(
-  element: Element,
-  imgClass: string,
-  closeBtnClass: string
-) {
-  return new Promise((resolve, reject) => {
-    const clickEvent = new MouseEvent('click', {
-      view: window,
-      bubbles: true,
-      cancelable: true,
-    })
-
-    // 模拟弹窗点击事件
-    element.dispatchEvent(clickEvent)
-
-    function checkIfImageLoaded() {
-      const imgEl = document.querySelector(imgClass)
-      if (imgEl) {
-        resolve(imgEl.getAttribute('src')) // Resolve the promise with the image source
-        const closeModalEl = document.querySelector(closeBtnClass)
-        closeModalEl?.dispatchEvent(clickEvent) // Close the modal
-      } else {
-        setTimeout(checkIfImageLoaded, 500) // Poll every 500ms
-      }
-    }
-
-    // Start checking if the image is loaded after initial delay
-    setTimeout(checkIfImageLoaded, 1000)
-  })
-}
-
 // 获取动态中多图片
 async function processAllImages(
-  imageElements: NodeListOf<Element>,
-  imgClass: string,
-  closeBtnClass: string
+  imageElements: NodeListOf<Element>
 ): Promise<string[]> {
   const multiImageList: string[] = []
 
   for (let i = 0; i < imageElements.length; i++) {
     try {
-      const src = (await clickAndGetImageSrc(
-        imageElements[i],
-        imgClass,
-        closeBtnClass
-      )) as string
-      multiImageList.push(src)
+      // 获取元素的计算样式
+      const style = window.getComputedStyle(imageElements[i])
+      // 提取background-image属性值
+      let backgroundImage = style.getPropertyValue('background-image')
+
+      // 如果background-image是URL, 提取URL部分
+      if (backgroundImage.startsWith('url')) {
+        // 去掉"url("和")"，并处理可能的引号
+        backgroundImage = backgroundImage.slice(4, -1).replace(/["']/g, '')
+        multiImageList.push(backgroundImage)
+      }
     } catch (error) {
       console.error(error)
     }
