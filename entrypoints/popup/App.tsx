@@ -104,13 +104,14 @@ export default function App() {
                 browser.tabs.create({ url: 'https://web.okjike.com/' })
               }
             >
-              去即刻动态中操作
+              去即刻中操作
             </Button>
           )}
         </Form.Item>
 
         <Form.Item>
           <Checkbox
+            disabled={!inJike}
             checked={exportConfig.isSingleFile}
             onChange={(e) =>
               setExportConfig({
