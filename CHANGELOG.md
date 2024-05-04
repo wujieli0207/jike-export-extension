@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.2.1](https://github.com/wujieli0207/jike-export-extension/compare/v1.2.0...v1.2.1) (2024-05-04)
+
+
+### Features
+
+* 导出和激活提示语优化 ([af85df2](https://github.com/wujieli0207/jike-export-extension/commit/af85df2c703e149e1ed9ca88cf228457cd834be2))
+* 支持导出动态引用的链接，单文件导出排序优化，提示语优化 ([543a430](https://github.com/wujieli0207/jike-export-extension/commit/543a430372eb7aab11d77a3df657e8363b344ff4))
+
+
+### Bug Fixes
+
+* 没有在动态中禁止选择文件，提示语优化 ([6926f82](https://github.com/wujieli0207/jike-export-extension/commit/6926f82818807797e997a2d3f665d80288150bed))
+
 ## 1.2.0 (2024-05-03)
 
 
