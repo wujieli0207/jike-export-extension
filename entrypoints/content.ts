@@ -23,7 +23,11 @@ export default defineContentScript({
       const initMemos = document.querySelector(
         MEMOS_SELECTOR
       ) as HTMLDivElement | null
-      if (!initMemos) return
+
+      if (!initMemos) {
+        alert('请进入一个用户的动态列表操作')
+        return
+      }
 
       // 等待滚动，获取全部数据
       await autoScroll(isVerified)
@@ -41,6 +45,11 @@ export default defineContentScript({
       const newMemoList = (isVerified ? memoList : memoList.slice(0, 50)).map(
         (memo) => {
           let content = memo.content
+
+          // 内容的附带的链接
+          if (memo.contentCircle) {
+            content += `\n\n[${memo.contentCircle.title}](${memo.contentCircle.url})`
+          }
 
           // 动态链接
           if (memo.memoLink) {
@@ -99,14 +108,29 @@ async function getMemos(memos: HTMLDivElement) {
 
     // 时间
     const timeEl = memoEl.querySelector('time')
+
+    // 此时到了未激活状态的最后一条
+    if (!timeEl) break
+
     const time = dayjs(timeEl?.getAttribute('datetime') ?? '').format(
       FILE_DATE_FORMAT
     )
 
-    // content
+    // === content ===
     const contentEl = memoEl.querySelector('[class*="content_truncate"]')
     const contentHTML = contentEl?.innerHTML ?? ''
     const content = handleHtmlToMd(contentHTML)
+
+    // === content 中的链接 ===
+    const contentLinkContainerEl = memoEl.querySelector(
+      '[class*="LinkInfo__Container"]'
+    )
+    const contentLinkEl =
+      contentLinkContainerEl?.parentNode as HTMLAnchorElement
+    const contentLinkText =
+      contentLinkContainerEl?.querySelector('[class*="LinkInfo__StyledText"]')
+        ?.innerHTML ?? ''
+    const contentLinkHref = contentLinkEl?.getAttribute('href') ?? ''
 
     // ==== 图片 ====
     const imgSrcList: string[] = []
@@ -157,6 +181,13 @@ async function getMemos(memos: HTMLDivElement) {
     memoResultList.push({
       time,
       content,
+      contentCircle:
+        contentLinkHref && contentLinkText
+          ? {
+              title: contentLinkText,
+              url: contentLinkHref,
+            }
+          : null,
       quote,
       quoteCircle:
         quoteCircleLink && quoteCircleText
@@ -236,33 +267,31 @@ async function handleExportAsSingleFile(
   // 完成内容
   let resultContent = ''
 
-  memos.forEach((memo) => {
-    const content = memo.content
-    resultContent += `\n\n## ${dayjs(
-      memo.time
-        .split('_')
-        .map((item, index) => {
-          if (index === 1) {
-            return item.replaceAll('-', ':')
-          } else {
-            return item
-          }
-        })
-        .join(' ')
-    ).format(DATE_FORMAT)}\n\n${content}\n\n`
-
-    // 下载图片
-    memo.files.forEach((url, i) => {
-      if (url) {
-        const promise = fetch(url)
-          .then((res) => res.blob())
-          .then((blob) => {
-            zip.file(`images/${memo.time}_${i + 1}.png`, blob)
-          })
-        filesTask.push(promise)
-      }
+  // 按照时间降序排列
+  memos
+    .sort((a, b) => {
+      return dayjs(formatMdTime(a.time)).isAfter(dayjs(formatMdTime(b.time)))
+        ? -1
+        : 1
     })
-  })
+    .forEach((memo) => {
+      const content = memo.content
+      resultContent += `\n\n## ${dayjs(formatMdTime(memo.time)).format(
+        DATE_FORMAT
+      )}\n\n${content}\n\n`
+
+      // 下载图片
+      memo.files.forEach((url, i) => {
+        if (url) {
+          const promise = fetch(url)
+            .then((res) => res.blob())
+            .then((blob) => {
+              zip.file(`images/${memo.time}_${i + 1}.png`, blob)
+            })
+          filesTask.push(promise)
+        }
+      })
+    })
 
   // 完成所有图片下载任务
   await Promise.all(filesTask)
@@ -339,4 +368,18 @@ async function processAllImages(
   }
 
   return multiImageList
+}
+
+// 将 markdown 文件的时间转化为可以被 dayjs 识别的时间
+function formatMdTime(time: string): string {
+  return time
+    .split('_')
+    .map((item, index) => {
+      if (index === 1) {
+        return item.replaceAll('-', ':')
+      } else {
+        return item
+      }
+    })
+    .join(' ')
 }

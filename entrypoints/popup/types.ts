@@ -23,6 +23,7 @@ export interface ILink {
 export interface IMemoResult {
   time: string
   content: string
+  contentCircle: ILink | null // 内容附带的链接
   quote: string // 回复动态
   quoteCircle: ILink | null // 回复动态的圈子
   memoLink: string
