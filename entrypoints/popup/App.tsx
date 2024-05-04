@@ -94,7 +94,7 @@ export default function App() {
         <Form.Item>
           {inJike ? (
             <Button type="primary" className="button" onClick={handleExport}>
-              {isClickExport ? '导出中，完成后将自动下载...' : '导出'}
+              {isClickExport ? '导出中请耐心等待，完成后自动下载...' : '导出'}
             </Button>
           ) : (
             <Button
@@ -147,7 +147,10 @@ export default function App() {
             name="newLicenseKey"
             rules={[{ required: true, message: '请输入激活码!' }]}
           >
-            <Input placeholder="请输入激活码" />
+            <Input
+              placeholder="请输入激活码"
+              suffix={isVerified === null ? '⌛' : isVerified ? '✅' : '❌'}
+            />
           </Form.Item>
 
           <Form.Item wrapperCol={{ span: 24 }}>
