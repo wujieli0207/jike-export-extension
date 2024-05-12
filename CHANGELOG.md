@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.3.0](https://github.com/wujieli0207/jike-export-extension/compare/v1.2.1...v1.3.0) (2024-05-12)
+
+
+### Features
+
+* 支持导出个人收藏 ([e12cc86](https://github.com/wujieli0207/jike-export-extension/commit/e12cc86646bf2026ac5955392dfaafcd92855642))
+* 支持是否单独导出图片设置 ([056f278](https://github.com/wujieli0207/jike-export-extension/commit/056f27880a66c4fc1156b8d4e9998b69ecc118fd))
+
 ### [1.2.1](https://github.com/wujieli0207/jike-export-extension/compare/v1.2.0...v1.2.1) (2024-05-04)
 
 
