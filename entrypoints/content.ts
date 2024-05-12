@@ -37,6 +37,7 @@ export default defineContentScript({
       ) as HTMLDivElement | null
       if (!totalMemos) return
 
+      const isDownloadImage = message.config.isDownloadImage
       const author = getAuthor()
       const memoList = await getMemos(totalMemos)
 
@@ -72,9 +73,20 @@ export default defineContentScript({
 
           // 文件链接至 momo 中
           if (memo.files.length > 0) {
-            content += `\n${memo.files
-              .map((_item, i) => `\n![image](images/${memo.time}_${i + 1}.png)`)
-              .join('\n')}`
+            // 下载图片的情况
+            if (isDownloadImage) {
+              content += `\n${memo.files
+                .map(
+                  (_item, i) => `\n![image](images/${memo.time}_${i + 1}.png)`
+                )
+                .join('\n')}`
+            }
+            // 不用下载图片
+            else {
+              content += `\n${memo.files
+                .map((item) => `\n![image](${item})`)
+                .join('\n')}`
+            }
           }
 
           return {
@@ -86,8 +98,8 @@ export default defineContentScript({
 
       // 下载笔记
       message.config.isSingleFile
-        ? handleExportAsSingleFile(newMemoList, author)
-        : handleExportAsMultiFile(newMemoList, author)
+        ? handleExportAsSingleFile(newMemoList, author, isDownloadImage)
+        : handleExportAsMultiFile(newMemoList, author, isDownloadImage)
     })
   },
 })
@@ -225,7 +237,11 @@ function handleHtmlToMd(htmlString: string) {
   return result
 }
 
-async function handleExportAsMultiFile(memos: IMemoResult[], fileName: string) {
+async function handleExportAsMultiFile(
+  memos: IMemoResult[],
+  fileName: string,
+  isDownloadImage: boolean
+) {
   const zip = new Jszip()
 
   // 文件下载任务
@@ -236,20 +252,24 @@ async function handleExportAsMultiFile(memos: IMemoResult[], fileName: string) {
     zip.file(`${memo.time}.md`, content)
 
     // 下载图片
-    memo.files.forEach((url, i) => {
-      if (url) {
-        const promise = fetch(url)
-          .then((res) => res.blob())
-          .then((blob) => {
-            zip.file(`images/${memo.time}_${i + 1}.png`, blob)
-          })
-        filesTask.push(promise)
-      }
-    })
+    if (isDownloadImage) {
+      memo.files.forEach((url, i) => {
+        if (url) {
+          const promise = fetch(url)
+            .then((res) => res.blob())
+            .then((blob) => {
+              zip.file(`images/${memo.time}_${i + 1}.png`, blob)
+            })
+          filesTask.push(promise)
+        }
+      })
+    }
   })
 
   // 完成所有图片下载任务
-  await Promise.all(filesTask)
+  if (filesTask.length > 0) {
+    await Promise.all(filesTask)
+  }
 
   const result = await zip.generateAsync({ type: 'blob' })
   FileSaver.saveAs(result, `${fileName}.zip`)
@@ -257,7 +277,8 @@ async function handleExportAsMultiFile(memos: IMemoResult[], fileName: string) {
 
 async function handleExportAsSingleFile(
   memos: IMemoResult[],
-  fileName: string
+  fileName: string,
+  isDownloadImage: boolean
 ) {
   const zip = new Jszip()
 
@@ -281,20 +302,24 @@ async function handleExportAsSingleFile(
       )}\n\n${content}\n\n`
 
       // 下载图片
-      memo.files.forEach((url, i) => {
-        if (url) {
-          const promise = fetch(url)
-            .then((res) => res.blob())
-            .then((blob) => {
-              zip.file(`images/${memo.time}_${i + 1}.png`, blob)
-            })
-          filesTask.push(promise)
-        }
-      })
+      if (isDownloadImage) {
+        memo.files.forEach((url, i) => {
+          if (url) {
+            const promise = fetch(url)
+              .then((res) => res.blob())
+              .then((blob) => {
+                zip.file(`images/${memo.time}_${i + 1}.png`, blob)
+              })
+            filesTask.push(promise)
+          }
+        })
+      }
     })
 
   // 完成所有图片下载任务
-  await Promise.all(filesTask)
+  if (filesTask.length > 0) {
+    await Promise.all(filesTask)
+  }
 
   zip.file(`${fileName}.md`, resultContent)
 

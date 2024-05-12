@@ -7,6 +7,7 @@ export interface IVerifyResult {
 
 export interface IExportConfig {
   isSingleFile: boolean // 是否导出为单一文件
+  isDownloadImage: boolean // 是否下载图片
 }
 
 export interface IMessage {

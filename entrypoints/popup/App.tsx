@@ -2,7 +2,15 @@ import './App.css'
 import { useEffect, useState } from 'react'
 import { browser } from 'wxt/browser'
 import { storage } from 'wxt/storage'
-import { Button, Checkbox, Divider, Form, FormProps, Input } from 'antd'
+import {
+  Button,
+  Checkbox,
+  Divider,
+  Form,
+  FormProps,
+  Input,
+  Tooltip,
+} from 'antd'
 import { EXPORT_TYPE, JIKE_URL, NEW_LICENSE_KEY } from './config'
 import { getNewLicenseKey, getUserInfo } from './utils'
 import { IExportConfig, IMessage } from './types'
@@ -20,6 +28,7 @@ export default function App() {
 
   const [exportConfig, setExportConfig] = useState<IExportConfig>({
     isSingleFile: false,
+    isDownloadImage: false,
   })
 
   useEffect(() => {
@@ -30,7 +39,6 @@ export default function App() {
     })
 
     getNewLicenseKey().then((result) => {
-      console.log('getNewLicenseKey result: ', result)
       if (result) {
         form.setFieldValue('newLicenseKey', result)
       }
@@ -38,7 +46,6 @@ export default function App() {
 
     // 获取用户信息
     getUserInfo().then((result: boolean) => {
-      console.log('getUserInfo result: ', result)
       setIsVerified(result)
     })
   }, [])
@@ -64,9 +71,7 @@ export default function App() {
   }
 
   const onFinish: FormProps<FieldType>['onFinish'] = async (values) => {
-    console.log('Success:', values)
     const result = await storage.setItem(NEW_LICENSE_KEY, values.newLicenseKey)
-    console.log('onFinish result: ', result)
 
     // 更新状态
     setIsVerified(null)
@@ -109,19 +114,41 @@ export default function App() {
           )}
         </Form.Item>
 
-        <Form.Item>
-          <Checkbox
-            disabled={!inJike}
-            checked={exportConfig.isSingleFile}
-            onChange={(e) =>
-              setExportConfig({
-                ...exportConfig,
-                isSingleFile: e.target.checked,
-              })
-            }
+        <Form.Item style={{ marginBottom: '4px' }}>
+          <Tooltip
+            placement="top"
+            title="勾选后将导出为单个文件，不勾选则根据动态时间导出为多个文件"
           >
-            导出为单文件
-          </Checkbox>
+            <Checkbox
+              disabled={!inJike}
+              checked={exportConfig.isSingleFile}
+              onChange={(e) =>
+                setExportConfig({
+                  ...exportConfig,
+                  isSingleFile: e.target.checked,
+                })
+              }
+            >
+              导出为单文件
+            </Checkbox>
+          </Tooltip>
+        </Form.Item>
+
+        <Form.Item>
+          <Tooltip placement="top" title="勾选后将单独下载动态中的图片">
+            <Checkbox
+              disabled={!inJike}
+              checked={exportConfig.isDownloadImage}
+              onChange={(e) =>
+                setExportConfig({
+                  ...exportConfig,
+                  isDownloadImage: e.target.checked,
+                })
+              }
+            >
+              单独导出图片
+            </Checkbox>
+          </Tooltip>
         </Form.Item>
       </Form>
 
