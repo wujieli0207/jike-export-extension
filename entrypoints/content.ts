@@ -9,7 +9,7 @@ import { IMemoResult, IMessage } from './popup/types'
 const FILE_DATE_FORMAT = 'YYYY-MM-DD_HH-mm-ss'
 const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss'
 
-const MEMOS_SELECTOR = '#react-tabs-1 > div > div'
+const MEMOS_SELECTOR = '.react-tabs__tab-panel--selected > div > div'
 
 export default defineContentScript({
   matches: ['*://*.okjike.com/*'],
