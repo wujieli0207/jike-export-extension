@@ -37,6 +37,7 @@ export default function App() {
     isSingleFile: false,
     isDownloadImage: false,
   })
+  const [isShowImageOption, setIsShowImageOption] = useState(true)
 
   useEffect(() => {
     // 判断是不是在即刻中
@@ -78,19 +79,13 @@ export default function App() {
   }
 
   const onFinish: FormProps<FieldType>['onFinish'] = async (values) => {
-    const result = await storage.setItem(NEW_LICENSE_KEY, values.newLicenseKey)
+    await storage.setItem(NEW_LICENSE_KEY, values.newLicenseKey)
 
     // 更新状态
     setIsVerified(null)
     getUserInfo().then((result: boolean) => {
       setIsVerified(result)
     })
-  }
-
-  const onFinishFailed: FormProps<FieldType>['onFinishFailed'] = (
-    errorInfo
-  ) => {
-    console.log('Failed:', errorInfo)
   }
 
   return (
@@ -133,6 +128,14 @@ export default function App() {
                 defaultValue={ExportTypeEnum.MD}
                 disabled={!inJike}
                 options={ExportTypeList}
+                onChange={(value) => {
+                  setExportConfig({
+                    ...exportConfig,
+                    fileType: value,
+                  })
+                  // 包含以下的类型不展示图片设置
+                  setIsShowImageOption(![ExportTypeEnum.TXT].includes(value))
+                }}
               />
             </Flex>
           </Form.Item>
@@ -158,22 +161,24 @@ export default function App() {
               </Tooltip>
             </Form.Item>
 
-            <Form.Item style={{ marginBottom: '0px' }}>
-              <Tooltip placement="top" title="勾选后将单独下载动态中的图片">
-                <Checkbox
-                  disabled={!inJike}
-                  checked={exportConfig.isDownloadImage}
-                  onChange={(e) =>
-                    setExportConfig({
-                      ...exportConfig,
-                      isDownloadImage: e.target.checked,
-                    })
-                  }
-                >
-                  单独导出图片
-                </Checkbox>
-              </Tooltip>
-            </Form.Item>
+            {isShowImageOption && (
+              <Form.Item style={{ marginBottom: '0px' }}>
+                <Tooltip placement="top" title="勾选后将单独下载动态中的图片">
+                  <Checkbox
+                    disabled={!inJike}
+                    checked={exportConfig.isDownloadImage}
+                    onChange={(e) =>
+                      setExportConfig({
+                        ...exportConfig,
+                        isDownloadImage: e.target.checked,
+                      })
+                    }
+                  >
+                    单独导出图片
+                  </Checkbox>
+                </Tooltip>
+              </Form.Item>
+            )}
           </Flex>
         </Card>
       </Form>
@@ -193,7 +198,6 @@ export default function App() {
           style={{ maxWidth: 600 }}
           initialValues={{ remember: true }}
           onFinish={onFinish}
-          onFinishFailed={onFinishFailed}
           autoComplete="off"
         >
           <Form.Item<FieldType>

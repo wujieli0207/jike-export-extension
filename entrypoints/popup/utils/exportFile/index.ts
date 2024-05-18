@@ -1,6 +1,10 @@
 import { IExportConfig, IMemoResult } from '../../types'
 import { ExportTypeEnum } from '../../const/exportConst'
-import { handleExportAsMultiFile, handleExportAsSingleFile } from './markdown'
+import {
+  handleExportAsMultiMarkdownFile,
+  handleExportAsSingleMarkdownFile,
+} from './markdown'
+import { handleExportAsMultiTxtFile, handleExportAsSingleTxtFile } from './txt'
 
 export function handleExportFile(
   memos: IMemoResult[],
@@ -8,9 +12,16 @@ export function handleExportFile(
   options: IExportConfig
 ) {
   const { fileType, isSingleFile, isDownloadImage } = options
+
   if (fileType === ExportTypeEnum.MD) {
     isSingleFile
-      ? handleExportAsSingleFile(memos, fileName, isDownloadImage)
-      : handleExportAsMultiFile(memos, fileName, isDownloadImage)
+      ? handleExportAsSingleMarkdownFile(memos, fileName, isDownloadImage)
+      : handleExportAsMultiMarkdownFile(memos, fileName, isDownloadImage)
+  }
+
+  if (fileType === ExportTypeEnum.TXT) {
+    isSingleFile
+      ? handleExportAsSingleTxtFile(memos, fileName)
+      : handleExportAsMultiTxtFile(memos, fileName)
   }
 }

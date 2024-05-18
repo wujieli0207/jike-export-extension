@@ -8,7 +8,7 @@ import { DATE_FORMAT } from '../../config'
 import html2md from 'html-to-md'
 
 // === 导出为 markdown 文件 ===
-export async function handleExportAsMultiFile(
+export async function handleExportAsMultiMarkdownFile(
   memos: IMemoResult[],
   fileName: string,
   isDownloadImage: boolean
@@ -46,7 +46,7 @@ export async function handleExportAsMultiFile(
   FileSaver.saveAs(result, `${fileName}.zip`)
 }
 
-export async function handleExportAsSingleFile(
+export async function handleExportAsSingleMarkdownFile(
   memos: IMemoResult[],
   fileName: string,
   isDownloadImage: boolean

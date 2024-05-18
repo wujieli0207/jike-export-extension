@@ -25,7 +25,8 @@ export interface ILink {
 
 export interface IMemoResult {
   time: string
-  content: string
+  rawContent: string // 原始文本
+  content: string // markdown 文本的内容
   contentCircle: ILink | null // 内容附带的链接
   quote: string // 回复动态
   quoteCircle: ILink | null // 回复动态的圈子

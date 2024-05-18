@@ -1,6 +1,6 @@
 export enum ExportTypeEnum {
   MD = 'markdown',
-  TXT = 'text',
+  TXT = 'txt',
   EXCEL = 'excel',
   CSV = 'csv',
 }

@@ -2,7 +2,7 @@ import ReactDOM from 'react-dom/client'
 import Loading from '../components/Loading'
 import { EXPORT_TIPS } from '../config'
 
-export function globalLoading(ctx) {
+export function globalLoading(ctx: any) {
   const app = createIntegratedUi(ctx, {
     position: 'inline',
     onMount: (container) => {
