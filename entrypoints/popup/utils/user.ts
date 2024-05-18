@@ -1,5 +1,11 @@
-import { NEW_LICENSE_KEY, VERIFY_RESULT } from '../config'
-import { IVerifyResult } from '../types'
+import { EXPORT_CONFIG, NEW_LICENSE_KEY, VERIFY_RESULT } from '../config'
+import { IExportConfig, IVerifyResult } from '../types'
+
+// 获取输入的 lincense key
+export async function getLocalExportConfig() {
+  const exportConfig = await storage.getItem<string>(EXPORT_CONFIG)
+  return JSON.parse(exportConfig ?? '{}') as IExportConfig
+}
 
 // 获取输入的 lincense key
 export async function getNewLicenseKey() {
@@ -11,10 +17,8 @@ export async function getNewLicenseKey() {
 export async function getUserInfo() {
   // 输入的密钥
   const newLicenseKey = await getNewLicenseKey()
-  console.log('getUserInfo newLicenseKey: ', newLicenseKey)
   // 验证信息
   const verifiedResult = await storage.getItem<IVerifyResult>(VERIFY_RESULT)
-  console.log('getUserInfo verifiedResult: ', verifiedResult)
 
   let isVerified = verifiedResult?.isVerified ?? false
 

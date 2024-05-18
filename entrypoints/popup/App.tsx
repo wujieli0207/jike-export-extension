@@ -15,14 +15,24 @@ import {
   Select,
   Tooltip,
 } from 'antd'
-import { EXPORT_TYPE, JIKE_URL, NEW_LICENSE_KEY } from './config'
-import { getNewLicenseKey, getUserInfo } from './utils/user'
+import { EXPORT_CONFIG, EXPORT_TYPE, JIKE_URL, NEW_LICENSE_KEY } from './config'
+import {
+  getLocalExportConfig,
+  getNewLicenseKey,
+  getUserInfo,
+} from './utils/user'
 import { IExportConfig, IMessage } from './types'
 import { EXPORT_TIPS } from './config'
 import { ExportTypeEnum, ExportTypeList } from './const/exportConst'
 
 type FieldType = {
   newLicenseKey?: string
+}
+
+const defaultExportConfig = {
+  fileType: ExportTypeEnum.MD,
+  isSingleFile: false,
+  isDownloadImage: false,
 }
 
 export default function App() {
@@ -32,11 +42,8 @@ export default function App() {
   const [inJike, setIsInJike] = useState(false)
   const [isVerified, setIsVerified] = useState<boolean | null>(false)
 
-  const [exportConfig, setExportConfig] = useState<IExportConfig>({
-    fileType: ExportTypeEnum.MD,
-    isSingleFile: false,
-    isDownloadImage: false,
-  })
+  const [exportConfig, setExportConfig] =
+    useState<IExportConfig>(defaultExportConfig)
   const [isShowImageOption, setIsShowImageOption] = useState(true)
 
   useEffect(() => {
@@ -56,10 +63,23 @@ export default function App() {
     getUserInfo().then((result: boolean) => {
       setIsVerified(result)
     })
+
+    // 从 localstorage 加载上一次导出的配置信息
+    getLocalExportConfig().then((result) => {
+      if (result) {
+        setExportConfig({
+          ...defaultExportConfig,
+          ...result,
+        })
+      }
+    })
   }, [])
 
   const handleExport = async () => {
     setIsClickExport(true)
+
+    // 存储当前当初选项至 localstorage 中
+    await storage.setItem(EXPORT_CONFIG, JSON.stringify(exportConfig))
 
     browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
       const activeTab = tabs[0]
@@ -125,7 +145,7 @@ export default function App() {
               </span>
               <Select
                 size="small"
-                defaultValue={ExportTypeEnum.MD}
+                value={exportConfig.fileType}
                 disabled={!inJike}
                 options={ExportTypeList}
                 onChange={(value) => {
