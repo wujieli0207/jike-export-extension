@@ -1,16 +1,14 @@
-import '~/assets/global.css'
-
-import html2md from 'html-to-md'
-import Jszip from 'jszip'
-// @ts-ignore
-import FileSaver from 'file-saver'
 import dayjs from 'dayjs'
-import { EXPORT_TYPE } from './popup/config'
+import { EXPORT_TYPE, FILE_DATE_FORMAT } from './popup/config'
 import { IMemoResult, IMessage } from './popup/types'
-import { globalLoading, autoScroll } from './popup/utils/exportHelper'
-
-const FILE_DATE_FORMAT = 'YYYY-MM-DD_HH-mm-ss'
-const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss'
+import {
+  globalLoading,
+  autoScroll,
+  getJikeUrl,
+  processAllImages,
+} from './popup/utils/exportHelper'
+import { handleExportFile } from './popup/utils/exportFile'
+import { handleHtmlToMd } from './popup/utils/exportFile/markdown'
 
 const MEMOS_SELECTOR = '.react-tabs__tab-panel--selected > div > div'
 
@@ -106,9 +104,7 @@ export default defineContentScript({
       )
 
       // 下载笔记
-      message.config.isSingleFile
-        ? handleExportAsSingleFile(newMemoList, author, isDownloadImage)
-        : handleExportAsMultiFile(newMemoList, author, isDownloadImage)
+      handleExportFile(newMemoList, author, message.config)
     })
   },
 })
@@ -230,153 +226,4 @@ async function getMemos(memos: HTMLDivElement) {
   }
 
   return memoResultList
-}
-
-function handleHtmlToMd(htmlString: string) {
-  const mdString = html2md(htmlString)
-
-  const result = mdString
-    .replace(/\\#/g, '#') // 标签
-    .replace(/\\---/g, '---') // 分隔线
-    .replace(/\\- /g, '- ') // 无序列表
-    .replace(/\\\. /g, '. ') // 有序列表
-    .replace(/\\\*\\\*/g, '**') // 加粗
-    .replace(/\*\*(#.+?)\*\*/g, '$1') // 去除 #Tag 的加粗效果
-
-  return result
-}
-
-async function handleExportAsMultiFile(
-  memos: IMemoResult[],
-  fileName: string,
-  isDownloadImage: boolean
-) {
-  const zip = new Jszip()
-
-  // 文件下载任务
-  const filesTask: Promise<void>[] = []
-
-  memos.forEach((memo) => {
-    const content = memo.content
-    zip.file(`${memo.time}.md`, content)
-
-    // 下载图片
-    if (isDownloadImage) {
-      memo.files.forEach((url, i) => {
-        if (url) {
-          const promise = fetch(url)
-            .then((res) => res.blob())
-            .then((blob) => {
-              zip.file(`images/${memo.time}_${i + 1}.png`, blob)
-            })
-          filesTask.push(promise)
-        }
-      })
-    }
-  })
-
-  // 完成所有图片下载任务
-  if (filesTask.length > 0) {
-    await Promise.all(filesTask)
-  }
-
-  const result = await zip.generateAsync({ type: 'blob' })
-  FileSaver.saveAs(result, `${fileName}.zip`)
-}
-
-async function handleExportAsSingleFile(
-  memos: IMemoResult[],
-  fileName: string,
-  isDownloadImage: boolean
-) {
-  const zip = new Jszip()
-
-  // 文件下载任务
-  const filesTask: Promise<void>[] = []
-
-  // 完成内容
-  let resultContent = ''
-
-  // 按照时间降序排列
-  memos
-    .sort((a, b) => {
-      return dayjs(formatMdTime(a.time)).isAfter(dayjs(formatMdTime(b.time)))
-        ? -1
-        : 1
-    })
-    .forEach((memo) => {
-      const content = memo.content
-      resultContent += `\n\n## ${dayjs(formatMdTime(memo.time)).format(
-        DATE_FORMAT
-      )}\n\n${content}\n\n`
-
-      // 下载图片
-      if (isDownloadImage) {
-        memo.files.forEach((url, i) => {
-          if (url) {
-            const promise = fetch(url)
-              .then((res) => res.blob())
-              .then((blob) => {
-                zip.file(`images/${memo.time}_${i + 1}.png`, blob)
-              })
-            filesTask.push(promise)
-          }
-        })
-      }
-    })
-
-  // 完成所有图片下载任务
-  if (filesTask.length > 0) {
-    await Promise.all(filesTask)
-  }
-
-  zip.file(`${fileName}.md`, resultContent)
-
-  const result = await zip.generateAsync({ type: 'blob' })
-  FileSaver.saveAs(result, `${fileName}.zip`)
-}
-
-function getJikeUrl(subUrl: string) {
-  return `https://web.okjike.com${subUrl}`
-}
-
-// 获取动态中多图片
-async function processAllImages(
-  imageElements: NodeListOf<Element>
-): Promise<string[]> {
-  const multiImageList: string[] = []
-
-  for (let i = 0; i < imageElements.length; i++) {
-    try {
-      // 获取元素的计算样式
-      const style = window.getComputedStyle(imageElements[i])
-      // 提取background-image属性值
-      let backgroundImage = style.getPropertyValue('background-image')
-
-      // 如果background-image是URL, 提取URL部分
-      if (backgroundImage.startsWith('url')) {
-        // 去掉"url("和")"，并处理可能的引号
-        backgroundImage = backgroundImage.slice(4, -1).replace(/["']/g, '')
-        multiImageList.push(backgroundImage)
-      }
-    } catch (error) {
-      console.error(error)
-    }
-  }
-
-  return multiImageList
-}
-
-// 将 markdown 文件的时间转化为可以被 dayjs 识别的时间
-function formatMdTime(time: string): string {
-  return time
-    .split('_')
-    .map((item, index) => {
-      if (index === 1) {
-        return item.replaceAll('-', ':')
-      } else {
-        return item
-      }
-    })
-    .join(' ')
 }

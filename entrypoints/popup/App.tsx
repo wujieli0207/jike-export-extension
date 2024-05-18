@@ -4,17 +4,22 @@ import { browser } from 'wxt/browser'
 import { storage } from 'wxt/storage'
 import {
   Button,
+  Card,
   Checkbox,
+  Collapse,
   Divider,
+  Flex,
   Form,
   FormProps,
   Input,
+  Select,
   Tooltip,
 } from 'antd'
 import { EXPORT_TYPE, JIKE_URL, NEW_LICENSE_KEY } from './config'
 import { getNewLicenseKey, getUserInfo } from './utils/user'
 import { IExportConfig, IMessage } from './types'
 import { EXPORT_TIPS } from './config'
+import { ExportTypeEnum, ExportTypeList } from './const/exportConst'
 
 type FieldType = {
   newLicenseKey?: string
@@ -28,6 +33,7 @@ export default function App() {
   const [isVerified, setIsVerified] = useState<boolean | null>(false)
 
   const [exportConfig, setExportConfig] = useState<IExportConfig>({
+    fileType: ExportTypeEnum.MD,
     isSingleFile: false,
     isDownloadImage: false,
   })
@@ -91,11 +97,12 @@ export default function App() {
     <>
       <Form
         name="basic"
-        labelCol={{ span: 8 }}
-        wrapperCol={{ span: 16 }}
+        labelCol={{ span: 12 }}
+        wrapperCol={{ span: 12 }}
         style={{ maxWidth: 600 }}
         initialValues={{ remember: true }}
         autoComplete="off"
+        labelAlign="left"
       >
         <Form.Item>
           {inJike ? (
@@ -115,42 +122,60 @@ export default function App() {
           )}
         </Form.Item>
 
-        <Form.Item style={{ marginBottom: '4px' }}>
-          <Tooltip
-            placement="top"
-            title="勾选后将导出为单个文件，不勾选则根据动态时间导出为多个文件"
-          >
-            <Checkbox
-              disabled={!inJike}
-              checked={exportConfig.isSingleFile}
-              onChange={(e) =>
-                setExportConfig({
-                  ...exportConfig,
-                  isSingleFile: e.target.checked,
-                })
-              }
-            >
-              导出为单文件
-            </Checkbox>
-          </Tooltip>
-        </Form.Item>
+        <Card title="导出设置" size="small">
+          <Form.Item style={{ marginBottom: '8px' }}>
+            <Flex justify="space-between" align="center">
+              <span style={{ width: '90px', marginRight: '12px' }}>
+                文件类型:{' '}
+              </span>
+              <Select
+                size="small"
+                defaultValue={ExportTypeEnum.MD}
+                disabled={!inJike}
+                options={ExportTypeList}
+              />
+            </Flex>
+          </Form.Item>
 
-        <Form.Item>
-          <Tooltip placement="top" title="勾选后将单独下载动态中的图片">
-            <Checkbox
-              disabled={!inJike}
-              checked={exportConfig.isDownloadImage}
-              onChange={(e) =>
-                setExportConfig({
-                  ...exportConfig,
-                  isDownloadImage: e.target.checked,
-                })
-              }
-            >
-              单独导出图片
-            </Checkbox>
-          </Tooltip>
-        </Form.Item>
+          <Flex justify="space-between">
+            <Form.Item style={{ marginBottom: '0px' }}>
+              <Tooltip
+                placement="top"
+                title="勾选后将导出为单个文件，不勾选则根据动态时间导出为多个文件"
+              >
+                <Checkbox
+                  disabled={!inJike}
+                  checked={exportConfig.isSingleFile}
+                  onChange={(e) =>
+                    setExportConfig({
+                      ...exportConfig,
+                      isSingleFile: e.target.checked,
+                    })
+                  }
+                >
+                  导出为单文件
+                </Checkbox>
+              </Tooltip>
+            </Form.Item>
+
+            <Form.Item style={{ marginBottom: '0px' }}>
+              <Tooltip placement="top" title="勾选后将单独下载动态中的图片">
+                <Checkbox
+                  disabled={!inJike}
+                  checked={exportConfig.isDownloadImage}
+                  onChange={(e) =>
+                    setExportConfig({
+                      ...exportConfig,
+                      isDownloadImage: e.target.checked,
+                    })
+                  }
+                >
+                  单独导出图片
+                </Checkbox>
+              </Tooltip>
+            </Form.Item>
+          </Flex>
+        </Card>
       </Form>
 
       <Divider />

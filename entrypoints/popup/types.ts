@@ -1,4 +1,5 @@
 import { EXPORT_TYPE } from './config'
+import { ExportTypeEnum } from './const/exportConst'
 
 export interface IVerifyResult {
   isVerified: boolean // 是否通过密钥验证通过
@@ -6,6 +7,7 @@ export interface IVerifyResult {
 }
 
 export interface IExportConfig {
+  fileType: ExportTypeEnum // 导出文件类型
   isSingleFile: boolean // 是否导出为单一文件
   isDownloadImage: boolean // 是否下载图片
 }

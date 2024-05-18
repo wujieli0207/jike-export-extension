@@ -9,3 +9,7 @@ export const NEW_LICENSE_KEY = 'local:newLicenseKey'
 export const VERIFY_RESULT = 'local:verifyResult'
 
 export const EXPORT_TIPS = '导出中请耐心等待，完成后自动下载...'
+
+export const FILE_DATE_FORMAT = 'YYYY-MM-DD_HH-mm-ss'
+
+export const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss'
