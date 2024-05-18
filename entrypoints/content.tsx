@@ -1,3 +1,5 @@
+import '~/assets/global.css'
+
 import html2md from 'html-to-md'
 import Jszip from 'jszip'
 // @ts-ignore
@@ -5,6 +7,7 @@ import FileSaver from 'file-saver'
 import dayjs from 'dayjs'
 import { EXPORT_TYPE } from './popup/config'
 import { IMemoResult, IMessage } from './popup/types'
+import { globalLoading, autoScroll } from './popup/utils/exportHelper'
 
 const FILE_DATE_FORMAT = 'YYYY-MM-DD_HH-mm-ss'
 const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss'
@@ -29,8 +32,14 @@ export default defineContentScript({
         return
       }
 
+      const { openLoading, closeLoading } = globalLoading(ctx)
+
+      openLoading()
+
       // 等待滚动，获取全部数据
       await autoScroll(isVerified)
+
+      closeLoading()
 
       const totalMemos = document.querySelector(
         MEMOS_SELECTOR
@@ -325,43 +334,6 @@ async function handleExportAsSingleFile(
 
   const result = await zip.generateAsync({ type: 'blob' })
   FileSaver.saveAs(result, `${fileName}.zip`)
-}
-
-function autoScroll(isVerified: boolean): Promise<boolean> {
-  return new Promise((resolve, reject) => {
-    const isScrollBottom = () => {
-      const result = document.querySelector(
-        '[class*="LoadingIndicator__Container"]'
-      )
-      return result === null
-    }
-
-    const scrollBottom = () => {
-      window.scrollTo(0, document.body.scrollHeight)
-    }
-
-    const quit = () => {
-      clearInterval(intervalId)
-      resolve(true)
-    }
-
-    // 标记在非激活的场景下，只用滚动 3 次就好
-    let scrollCount = 0
-
-    const intervalId = setInterval(() => {
-      if (isScrollBottom()) {
-        quit()
-      } else {
-        scrollCount += 1
-
-        if (!isVerified && scrollCount >= 3) {
-          quit()
-        }
-
-        scrollBottom()
-      }
-    }, 1 * 1000)
-  })
 }
 
 function getJikeUrl(subUrl: string) {

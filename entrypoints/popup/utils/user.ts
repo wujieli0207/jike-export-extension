@@ -1,5 +1,5 @@
-import { NEW_LICENSE_KEY, VERIFY_RESULT } from './config'
-import { IVerifyResult } from './types'
+import { NEW_LICENSE_KEY, VERIFY_RESULT } from '../config'
+import { IVerifyResult } from '../types'
 
 // 获取输入的 lincense key
 export async function getNewLicenseKey() {

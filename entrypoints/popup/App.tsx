@@ -12,8 +12,9 @@ import {
   Tooltip,
 } from 'antd'
 import { EXPORT_TYPE, JIKE_URL, NEW_LICENSE_KEY } from './config'
-import { getNewLicenseKey, getUserInfo } from './utils'
+import { getNewLicenseKey, getUserInfo } from './utils/user'
 import { IExportConfig, IMessage } from './types'
+import { EXPORT_TIPS } from './config'
 
 type FieldType = {
   newLicenseKey?: string
@@ -99,7 +100,7 @@ export default function App() {
         <Form.Item>
           {inJike ? (
             <Button type="primary" className="button" onClick={handleExport}>
-              {isClickExport ? '导出中请耐心等待，完成后自动下载...' : '导出'}
+              {isClickExport ? EXPORT_TIPS : '导出'}
             </Button>
           ) : (
             <Button

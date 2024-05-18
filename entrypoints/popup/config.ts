@@ -7,3 +7,5 @@ export const NEW_LICENSE_KEY = 'local:newLicenseKey'
 
 // 输入密钥之后的校验信息
 export const VERIFY_RESULT = 'local:verifyResult'
+
+export const EXPORT_TIPS = '导出中请耐心等待，完成后自动下载...'
