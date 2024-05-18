@@ -111,7 +111,10 @@ async function getMemos(memos: HTMLDivElement) {
     // 单一图片
     const singleImageEl = imageContainerEl?.querySelector('img')
     if (singleImageEl) {
-      imgSrcList.push(singleImageEl.getAttribute('src') as string)
+      imgSrcList.push(
+        // 保证获取原图
+        singleImageEl.getAttribute('src')?.split('?')[0] as string
+      )
     }
     // 多张图片
     const multiImageEl = imageContainerEl?.querySelectorAll(

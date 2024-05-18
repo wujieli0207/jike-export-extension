@@ -112,6 +112,8 @@ export async function processAllImages(
       if (backgroundImage.startsWith('url')) {
         // 去掉"url("和")"，并处理可能的引号
         backgroundImage = backgroundImage.slice(4, -1).replace(/["']/g, '')
+        // 去除图片后面的参数，直接加载原图
+        backgroundImage = backgroundImage.split('?')[0]
         multiImageList.push(backgroundImage)
       }
     } catch (error) {
