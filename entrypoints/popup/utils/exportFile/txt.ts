@@ -29,8 +29,6 @@ export async function handleExportAsSingleTxtFile(
   memos: IMemoResult[],
   fileName: string
 ) {
-  const zip = new Jszip()
-
   // 完成内容
   let resultContent = ''
 
@@ -48,10 +46,11 @@ export async function handleExportAsSingleTxtFile(
       )} ==========\n\n${rawContent}\n\n`
     })
 
-  zip.file(`${fileName}.txt`, resultContent)
+  // 创建一个 Blob 对象，直接下载为 txt 文件
+  const blob = new Blob([resultContent], { type: 'text/plain;charset=utf-8' })
 
-  const result = await zip.generateAsync({ type: 'blob' })
-  FileSaver.saveAs(result, `${fileName}.zip`)
+  // 使用 FileSaver 保存文件
+  FileSaver.saveAs(blob, `${fileName}.txt`)
 }
 
 export function handleHtmlToTxt(htmlString: string) {
