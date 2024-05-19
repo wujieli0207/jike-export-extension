@@ -23,3 +23,19 @@ export const ExportTypeList = [
     label: 'CSV',
   },
 ]
+
+export enum ContentOrderTypeEnum {
+  ASC = 'asc',
+  DESC = 'desc',
+}
+
+export const ContentOrderTypeList = [
+  {
+    value: ContentOrderTypeEnum.ASC,
+    label: '从旧动态到新动态',
+  },
+  {
+    value: ContentOrderTypeEnum.DESC,
+    label: '从新动态到旧动态',
+  },
+]

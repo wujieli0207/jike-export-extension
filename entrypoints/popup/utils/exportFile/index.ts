@@ -13,25 +13,25 @@ export function handleExportFile(
   fileName: string,
   options: IExportConfig
 ) {
-  const { fileType, isSingleFile, isDownloadImage } = options
+  const { fileType, isSingleFile } = options
 
   if (fileType === ExportTypeEnum.MD) {
     isSingleFile
-      ? handleExportAsSingleMarkdownFile(memos, fileName, isDownloadImage)
-      : handleExportAsMultiMarkdownFile(memos, fileName, isDownloadImage)
+      ? handleExportAsSingleMarkdownFile(memos, fileName, options)
+      : handleExportAsMultiMarkdownFile(memos, fileName, options)
   }
 
   if (fileType === ExportTypeEnum.TXT) {
     isSingleFile
-      ? handleExportAsSingleTxtFile(memos, fileName)
-      : handleExportAsMultiTxtFile(memos, fileName)
+      ? handleExportAsSingleTxtFile(memos, fileName, options)
+      : handleExportAsMultiTxtFile(memos, fileName, options)
   }
 
   if (fileType === ExportTypeEnum.EXCEL) {
-    handleExportAsSingleExcelFile(memos, fileName)
+    handleExportAsSingleExcelFile(memos, fileName, options)
   }
 
   if (fileType === ExportTypeEnum.CSV) {
-    handleExportAsSingleCsvFile(memos, fileName)
+    handleExportAsSingleCsvFile(memos, fileName, options)
   }
 }

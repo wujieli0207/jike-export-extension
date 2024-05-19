@@ -1,18 +1,21 @@
 import Jszip from 'jszip'
 // @ts-ignore
 import FileSaver from 'file-saver'
-import { IMemoResult } from '../../types'
+import { IExportConfig, IMemoResult } from '../../types'
 import dayjs from 'dayjs'
 import { formatMdTime } from '../exportHelper'
 import { DATE_FORMAT } from '../../config'
 import html2md from 'html-to-md'
+import { ContentOrderTypeEnum } from '../../const/exportConst'
 
 // === 导出为 markdown 文件 ===
 export async function handleExportAsMultiMarkdownFile(
   memos: IMemoResult[],
   fileName: string,
-  isDownloadImage: boolean
+  options: IExportConfig
 ) {
+  const { isDownloadImage } = options
+
   const zip = new Jszip()
 
   // 文件下载任务
@@ -49,8 +52,10 @@ export async function handleExportAsMultiMarkdownFile(
 export async function handleExportAsSingleMarkdownFile(
   memos: IMemoResult[],
   fileName: string,
-  isDownloadImage: boolean
+  options: IExportConfig
 ) {
+  const { isDownloadImage, contentOrder } = options
+
   const zip = new Jszip()
 
   // 文件下载任务
@@ -62,9 +67,13 @@ export async function handleExportAsSingleMarkdownFile(
   // 按照时间降序排列
   memos
     .sort((a, b) => {
-      return dayjs(formatMdTime(a.time)).isAfter(dayjs(formatMdTime(b.time)))
-        ? -1
-        : 1
+      const timeA = dayjs(formatMdTime(a.time)).valueOf()
+      const timeB = dayjs(formatMdTime(b.time)).valueOf()
+      if (contentOrder === ContentOrderTypeEnum.ASC) {
+        return timeA - timeB
+      } else {
+        return timeB - timeA
+      }
     })
     .forEach((memo) => {
       const content = memo.content

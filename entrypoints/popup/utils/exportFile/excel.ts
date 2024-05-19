@@ -1,20 +1,28 @@
 // @ts-ignore
 import FileSaver from 'file-saver'
 import * as XLSX from 'xlsx'
-import { IMemoResult } from '../../types'
+import { IExportConfig, IMemoResult } from '../../types'
 import dayjs from 'dayjs'
 import { formatMdTime } from '../exportHelper'
 import { DATE_FORMAT } from '../../config'
+import { ContentOrderTypeEnum } from '../../const/exportConst'
 
 export async function handleExportAsSingleExcelFile(
   memos: IMemoResult[],
-  fileName: string
+  fileName: string,
+  options: IExportConfig
 ) {
-  // 按照时间降序排列
+  const { contentOrder } = options
+
+  // 按照时间排序
   memos.sort((a, b) => {
-    return dayjs(formatMdTime(a.time)).isAfter(dayjs(formatMdTime(b.time)))
-      ? -1
-      : 1
+    const timeA = dayjs(formatMdTime(a.time)).valueOf()
+    const timeB = dayjs(formatMdTime(b.time)).valueOf()
+    if (contentOrder === ContentOrderTypeEnum.ASC) {
+      return timeA - timeB
+    } else {
+      return timeB - timeA
+    }
   })
 
   // 准备 Excel 数据

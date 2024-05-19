@@ -23,16 +23,22 @@ import {
 } from './utils/user'
 import { IExportConfig, IMessage } from './types'
 import { EXPORT_TIPS } from './config'
-import { ExportTypeEnum, ExportTypeList } from './const/exportConst'
+import {
+  ContentOrderTypeEnum,
+  ContentOrderTypeList,
+  ExportTypeEnum,
+  ExportTypeList,
+} from './const/exportConst'
 
 type FieldType = {
   newLicenseKey?: string
 }
 
-const defaultExportConfig = {
+const defaultExportConfig: IExportConfig = {
   fileType: ExportTypeEnum.MD,
   isSingleFile: false,
   isDownloadImage: false,
+  contentOrder: ContentOrderTypeEnum.DESC,
 }
 
 export default function App() {
@@ -47,6 +53,7 @@ export default function App() {
   const [showOptions, setShowOptions] = useState({
     isShowImage: false,
     isShowSingleFile: false,
+    isShowContentOrder: false,
   })
 
   useEffect(() => {
@@ -74,7 +81,7 @@ export default function App() {
           ...defaultExportConfig,
           ...result,
         })
-        handleSetShowOptions(result.fileType)
+        handleSetShowOptions(result.fileType, result.isSingleFile)
       }
     })
   }, [])
@@ -112,7 +119,10 @@ export default function App() {
     })
   }
 
-  const handleSetShowOptions = (fileType: ExportTypeEnum) => {
+  const handleSetShowOptions = (
+    fileType: ExportTypeEnum,
+    isSingleFile: boolean
+  ) => {
     setShowOptions({
       ...showOptions,
       // 包含以下的类型不展示是否导出图片
@@ -125,6 +135,12 @@ export default function App() {
       isShowSingleFile: ![ExportTypeEnum.EXCEL, ExportTypeEnum.CSV].includes(
         fileType
       ),
+      // 两种情况
+      // 1. 肯定导出的是单文件，比如 excel、csv
+      // 2. 选择导出的是单文件
+      isShowContentOrder:
+        [ExportTypeEnum.EXCEL, ExportTypeEnum.CSV].includes(fileType) ||
+        isSingleFile,
     })
   }
 
@@ -173,7 +189,7 @@ export default function App() {
                     ...exportConfig,
                     fileType: value,
                   })
-                  handleSetShowOptions(value)
+                  handleSetShowOptions(value, exportConfig.isSingleFile)
                 }}
               />
             </Flex>
@@ -189,12 +205,14 @@ export default function App() {
                   <Checkbox
                     disabled={!inJike}
                     checked={exportConfig.isSingleFile}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const checked = e.target.checked
                       setExportConfig({
                         ...exportConfig,
-                        isSingleFile: e.target.checked,
+                        isSingleFile: checked,
                       })
-                    }
+                      handleSetShowOptions(exportConfig.fileType, checked)
+                    }}
                   >
                     导出为单文件
                   </Checkbox>
@@ -221,6 +239,28 @@ export default function App() {
               </Form.Item>
             )}
           </Flex>
+
+          {exportConfig.isSingleFile && (
+            <Form.Item style={{ marginBottom: '8px' }}>
+              <Flex justify="space-between" align="center">
+                <span style={{ width: '90px', marginRight: '12px' }}>
+                  动态排序:{' '}
+                </span>
+                <Select
+                  size="small"
+                  value={exportConfig.contentOrder}
+                  disabled={!inJike}
+                  options={ContentOrderTypeList}
+                  onChange={(value) => {
+                    setExportConfig({
+                      ...exportConfig,
+                      contentOrder: value,
+                    })
+                  }}
+                />
+              </Flex>
+            </Form.Item>
+          )}
         </Card>
       </Form>
 

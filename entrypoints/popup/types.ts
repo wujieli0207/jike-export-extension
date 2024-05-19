@@ -1,5 +1,5 @@
 import { EXPORT_TYPE } from './config'
-import { ExportTypeEnum } from './const/exportConst'
+import { ContentOrderTypeEnum, ExportTypeEnum } from './const/exportConst'
 
 export interface IVerifyResult {
   isVerified: boolean // 是否通过密钥验证通过
@@ -10,6 +10,7 @@ export interface IExportConfig {
   fileType: ExportTypeEnum // 导出文件类型
   isSingleFile: boolean // 是否导出为单一文件
   isDownloadImage: boolean // 是否下载图片
+  contentOrder: ContentOrderTypeEnum // 内容排序，仅适用于单文件
 }
 
 export interface IMessage {

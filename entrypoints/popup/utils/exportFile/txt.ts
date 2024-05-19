@@ -1,18 +1,20 @@
 import Jszip from 'jszip'
 // @ts-ignore
 import FileSaver from 'file-saver'
-import { IMemoResult } from '../../types'
+import { IExportConfig, IMemoResult } from '../../types'
 import dayjs from 'dayjs'
 import { formatMdTime } from '../exportHelper'
 import { DATE_FORMAT } from '../../config'
 // @ts-ignore
 import { convert } from 'html-to-text'
+import { ContentOrderTypeEnum } from '../../const/exportConst'
 
 // === 导出为 txt 文件 ===
 // txt 没有图片下载任务
 export async function handleExportAsMultiTxtFile(
   memos: IMemoResult[],
-  fileName: string
+  fileName: string,
+  _options: IExportConfig
 ) {
   const zip = new Jszip()
 
@@ -27,17 +29,24 @@ export async function handleExportAsMultiTxtFile(
 
 export async function handleExportAsSingleTxtFile(
   memos: IMemoResult[],
-  fileName: string
+  fileName: string,
+  options: IExportConfig
 ) {
+  const { contentOrder } = options
+
   // 完成内容
   let resultContent = ''
 
   // 按照时间降序排列
   memos
     .sort((a, b) => {
-      return dayjs(formatMdTime(a.time)).isAfter(dayjs(formatMdTime(b.time)))
-        ? -1
-        : 1
+      const timeA = dayjs(formatMdTime(a.time)).valueOf()
+      const timeB = dayjs(formatMdTime(b.time)).valueOf()
+      if (contentOrder === ContentOrderTypeEnum.ASC) {
+        return timeA - timeB
+      } else {
+        return timeB - timeA
+      }
     })
     .forEach((memo) => {
       const rawContent = memo.rawContent
