@@ -247,7 +247,7 @@ export default function App() {
             <Form.Item style={{ marginBottom: '8px' }}>
               <Flex justify="space-between" align="center">
                 <span style={{ width: '90px', marginRight: '12px' }}>
-                  动态排序:{' '}
+                  排序:{' '}
                 </span>
                 <Select
                   size="small"
