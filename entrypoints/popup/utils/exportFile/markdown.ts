@@ -54,22 +54,17 @@ export async function handleExportAsSingleMarkdownFile(
   fileName: string,
   options: IExportConfig
 ) {
-  const { isDownloadImage, contentOrder } = options
-
-  const zip = new Jszip()
-
-  // 文件下载任务
-  const filesTask: Promise<void>[] = []
+  const { isSingleFile, isDownloadImage, contentOrder } = options
 
   // 完成内容
   let resultContent = ''
 
-  // 按照时间降序排列
+  // 按照时间排序，拼接时间标题
   memos
     .sort((a, b) => {
       const timeA = dayjs(formatMdTime(a.time)).valueOf()
       const timeB = dayjs(formatMdTime(b.time)).valueOf()
-      if (contentOrder === ContentOrderTypeEnum.ASC) {
+      if (contentOrder === 'asc') {
         return timeA - timeB
       } else {
         return timeB - timeA
@@ -80,8 +75,26 @@ export async function handleExportAsSingleMarkdownFile(
       resultContent += `\n\n## ${dayjs(formatMdTime(memo.time)).format(
         DATE_FORMAT
       )}\n\n${content}\n\n`
+    })
 
-      // 下载图片
+  // 单文件下载，并且不用单独下载图片，直接导出为 markdown 文件
+  if (isSingleFile && !isDownloadImage) {
+    // 创建一个 Blob 对象
+    const blob = new Blob([resultContent], {
+      type: 'text/markdown;charset=utf-8',
+    })
+    // 使用 FileSaver 保存文件
+    FileSaver.saveAs(blob, `${fileName}.md`)
+  }
+  // 其他场景使用 zip 打包下载
+  else {
+    const zip = new Jszip()
+
+    // 文件下载任务
+    const filesTask: Promise<void>[] = []
+
+    // 处理下载图片
+    memos.forEach((memo) => {
       if (isDownloadImage) {
         memo.files.forEach((url, i) => {
           if (url) {
@@ -96,15 +109,16 @@ export async function handleExportAsSingleMarkdownFile(
       }
     })
 
-  // 完成所有图片下载任务
-  if (filesTask.length > 0) {
-    await Promise.all(filesTask)
+    // 完成所有图片下载任务
+    if (filesTask.length > 0) {
+      await Promise.all(filesTask)
+    }
+
+    zip.file(`${fileName}.md`, resultContent)
+
+    const result = await zip.generateAsync({ type: 'blob' })
+    FileSaver.saveAs(result, `${fileName}.zip`)
   }
-
-  zip.file(`${fileName}.md`, resultContent)
-
-  const result = await zip.generateAsync({ type: 'blob' })
-  FileSaver.saveAs(result, `${fileName}.zip`)
 }
 
 export function handleHtmlToMd(htmlString: string) {
