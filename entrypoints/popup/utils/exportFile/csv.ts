@@ -1,4 +1,3 @@
-import Jszip from 'jszip'
 // @ts-ignore
 import FileSaver from 'file-saver'
 // @ts-ignore
