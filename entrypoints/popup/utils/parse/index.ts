@@ -1,5 +1,7 @@
 import { ExportTypeEnum } from '../../const/exportConst'
 import { IExportConfig, IMemoResult } from '../../types'
+import { csvParse } from './csvParse'
+import { excelParse } from './excelParse'
 import { markdownParse } from './markdownParse'
 import { txtParse } from './txtParse'
 
@@ -12,13 +14,21 @@ export function contentParse(
 ): IMemoResult[] {
   const { fileType } = options
 
-  if (fileType === ExportTypeEnum.MD) {
-    return markdownParse(memoList, options)
+  const parse: Record<
+    ExportTypeEnum,
+    (memoList: IMemoResult[], options: IExportConfig) => IMemoResult[]
+  > = {
+    [ExportTypeEnum.MD]: markdownParse,
+    [ExportTypeEnum.TXT]: txtParse,
+    [ExportTypeEnum.CSV]: csvParse,
+    [ExportTypeEnum.EXCEL]: excelParse,
   }
 
-  if (fileType === ExportTypeEnum.TXT) {
-    return txtParse(memoList, options)
-  }
+  const parseFn = parse[fileType]
 
-  return memoList
+  if (parseFn) {
+    return parseFn(memoList, options)
+  } else {
+    return memoList
+  }
 }

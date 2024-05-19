@@ -17,12 +17,14 @@
     "release": "standard-version"
   },
   "dependencies": {
+    "@ant-design/icons": "^5.3.7",
     "antd": "^5.16.4",
     "dayjs": "^1.11.10",
     "file-saver": "^2.0.5",
     "html-to-md": "^0.8.5",
     "html-to-text": "^9.0.5",
     "jszip": "^3.10.1",
+    "papaparse": "^5.4.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },

@@ -5,6 +5,7 @@ import {
   handleExportAsSingleMarkdownFile,
 } from './markdown'
 import { handleExportAsMultiTxtFile, handleExportAsSingleTxtFile } from './txt'
+import { handleExportAsSingleCsvFile } from './csv'
 
 export function handleExportFile(
   memos: IMemoResult[],
@@ -23,5 +24,9 @@ export function handleExportFile(
     isSingleFile
       ? handleExportAsSingleTxtFile(memos, fileName)
       : handleExportAsMultiTxtFile(memos, fileName)
+  }
+
+  if (fileType === ExportTypeEnum.CSV) {
+    handleExportAsSingleCsvFile(memos, fileName)
   }
 }

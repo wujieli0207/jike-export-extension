@@ -44,7 +44,10 @@ export default function App() {
 
   const [exportConfig, setExportConfig] =
     useState<IExportConfig>(defaultExportConfig)
-  const [isShowImageOption, setIsShowImageOption] = useState(true)
+  const [showOptions, setShowOptions] = useState({
+    isShowImage: false,
+    isShowSingleFile: false,
+  })
 
   useEffect(() => {
     // 判断是不是在即刻中
@@ -71,6 +74,7 @@ export default function App() {
           ...defaultExportConfig,
           ...result,
         })
+        handleSetShowOptions(result.fileType)
       }
     })
   }, [])
@@ -105,6 +109,22 @@ export default function App() {
     setIsVerified(null)
     getUserInfo().then((result: boolean) => {
       setIsVerified(result)
+    })
+  }
+
+  const handleSetShowOptions = (fileType: ExportTypeEnum) => {
+    setShowOptions({
+      ...showOptions,
+      // 包含以下的类型不展示是否导出图片
+      isShowImage: ![
+        ExportTypeEnum.TXT,
+        ExportTypeEnum.EXCEL,
+        ExportTypeEnum.CSV,
+      ].includes(fileType),
+      // 包含以下的类型不展示是否导出单文件
+      isShowSingleFile: ![ExportTypeEnum.EXCEL, ExportTypeEnum.CSV].includes(
+        fileType
+      ),
     })
   }
 
@@ -153,35 +173,36 @@ export default function App() {
                     ...exportConfig,
                     fileType: value,
                   })
-                  // 包含以下的类型不展示图片设置
-                  setIsShowImageOption(![ExportTypeEnum.TXT].includes(value))
+                  handleSetShowOptions(value)
                 }}
               />
             </Flex>
           </Form.Item>
 
           <Flex justify="space-between">
-            <Form.Item style={{ marginBottom: '0px' }}>
-              <Tooltip
-                placement="top"
-                title="勾选后将导出为单个文件，不勾选则根据动态时间导出为多个文件"
-              >
-                <Checkbox
-                  disabled={!inJike}
-                  checked={exportConfig.isSingleFile}
-                  onChange={(e) =>
-                    setExportConfig({
-                      ...exportConfig,
-                      isSingleFile: e.target.checked,
-                    })
-                  }
+            {showOptions.isShowSingleFile && (
+              <Form.Item style={{ marginBottom: '0px' }}>
+                <Tooltip
+                  placement="top"
+                  title="勾选后将导出为单个文件，不勾选则根据动态时间导出为多个文件"
                 >
-                  导出为单文件
-                </Checkbox>
-              </Tooltip>
-            </Form.Item>
+                  <Checkbox
+                    disabled={!inJike}
+                    checked={exportConfig.isSingleFile}
+                    onChange={(e) =>
+                      setExportConfig({
+                        ...exportConfig,
+                        isSingleFile: e.target.checked,
+                      })
+                    }
+                  >
+                    导出为单文件
+                  </Checkbox>
+                </Tooltip>
+              </Form.Item>
+            )}
 
-            {isShowImageOption && (
+            {showOptions.isShowImage && (
               <Form.Item style={{ marginBottom: '0px' }}>
                 <Tooltip placement="top" title="勾选后将单独下载动态中的图片">
                   <Checkbox
