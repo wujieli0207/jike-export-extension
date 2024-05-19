@@ -6,7 +6,6 @@ import {
   Button,
   Card,
   Checkbox,
-  Collapse,
   Divider,
   Flex,
   Form,
@@ -29,6 +28,7 @@ import {
   ExportTypeEnum,
   ExportTypeList,
 } from './const/exportConst'
+import { RightOutlined } from '@ant-design/icons'
 
 type FieldType = {
   newLicenseKey?: string
@@ -55,6 +55,7 @@ export default function App() {
     isShowSingleFile: false,
     isShowContentOrder: false,
   })
+  const [isExpandVerified, setIsExpandVerified] = useState(false)
 
   useEffect(() => {
     // 判断是不是在即刻中
@@ -72,6 +73,8 @@ export default function App() {
     // 获取用户信息
     getUserInfo().then((result: boolean) => {
       setIsVerified(result)
+      // 未激活状态，展示激活信息
+      setIsExpandVerified(!result)
     })
 
     // 从 localstorage 加载上一次导出的配置信息
@@ -266,52 +269,68 @@ export default function App() {
 
       <Divider />
 
-      <span>
+      <span
+        onClick={() => setIsExpandVerified(!isExpandVerified)}
+        className="verified-header"
+      >
+        <RightOutlined
+          style={{
+            marginRight: '4px',
+            fontSize: '10px',
+            transform: isExpandVerified ? 'rotate(90deg)' : '',
+          }}
+        />
         {isVerified
           ? '您已激活，支持导出全部动态'
           : '未激活仅支持导出 50 条即刻动态'}
       </span>
-      <p className="read-the-docs">
-        <Form
-          form={form}
-          labelCol={{ span: 8 }}
-          wrapperCol={{ span: 16 }}
-          style={{ maxWidth: 600 }}
-          initialValues={{ remember: true }}
-          onFinish={onFinish}
-          autoComplete="off"
-        >
-          <Form.Item<FieldType>
-            name="newLicenseKey"
-            rules={[{ required: true, message: '请输入激活码!' }]}
+      <div
+        className={`verified-content ${
+          isExpandVerified ? 'expanded' : 'collapsed'
+        }`}
+      >
+        <p>
+          <Form
+            form={form}
+            labelCol={{ span: 8 }}
+            wrapperCol={{ span: 16 }}
+            style={{ maxWidth: 600 }}
+            initialValues={{ remember: true }}
+            onFinish={onFinish}
+            autoComplete="off"
           >
-            <Input
-              placeholder="请输入激活码"
-              suffix={isVerified === null ? '⌛' : isVerified ? '✅' : '❌'}
-            />
-          </Form.Item>
-
-          <Form.Item wrapperCol={{ span: 24 }}>
-            <Button type="default" htmlType="submit" className="button">
-              激活
-            </Button>
-          </Form.Item>
-          <Form.Item wrapperCol={{ span: 24 }}>
-            <Button
-              type="link"
-              htmlType="submit"
-              className="button"
-              onClick={() =>
-                window.open(
-                  'https://jike-export.lemonsqueezy.com/buy/702040dd-c006-464e-9cf3-2e200380d228' // 正式地址
-                )
-              }
+            <Form.Item<FieldType>
+              name="newLicenseKey"
+              rules={[{ required: true, message: '请输入激活码!' }]}
             >
-              获取激活码
-            </Button>
-          </Form.Item>
-        </Form>
-      </p>
+              <Input
+                placeholder="请输入激活码"
+                suffix={isVerified === null ? '⌛' : isVerified ? '✅' : '❌'}
+              />
+            </Form.Item>
+
+            <Form.Item wrapperCol={{ span: 24 }}>
+              <Button type="default" htmlType="submit" className="button">
+                激活
+              </Button>
+            </Form.Item>
+            <Form.Item wrapperCol={{ span: 24 }}>
+              <Button
+                type="link"
+                htmlType="submit"
+                className="button"
+                onClick={() =>
+                  window.open(
+                    'https://jike-export.lemonsqueezy.com/buy/702040dd-c006-464e-9cf3-2e200380d228' // 正式地址
+                  )
+                }
+              >
+                获取激活码
+              </Button>
+            </Form.Item>
+          </Form>
+        </p>
+      </div>
     </>
   )
 }

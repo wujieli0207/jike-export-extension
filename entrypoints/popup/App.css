@@ -10,6 +10,23 @@
   width: 100%;
 }
 
-.read-the-docs {
+.verified-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.verified-content {
+  overflow: hidden;
+  transition: max-height 0.5s ease-out, opacity 0.5s ease-out;
+  max-height: 0;
+  opacity: 0;
   color: #888;
+}
+
+.verified-content.expanded {
+  max-height: 1000px; /* 设定一个足够大的值来确保内容完全展开 */
+  opacity: 1;
 }
