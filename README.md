@@ -2,16 +2,23 @@
 
 即刻导出是一个浏览器插件，可以导出即刻动态为本地文件，[下载地址](https://jike-export.wujieli.com/)
 
-目前优先支持 Markdown 文件
+支持导出为 Markdown、纯文本、excel、csv 格式的文件
 
 1. 支持导出自己和即友的动态列表，同时支持导出个人收藏
 2. 支持导出图片、动态链接、引用动态等完整信息
 3. 支持无缝导入 Obsidian、Heptabase 等笔记工具
 
-Export the immediate dynamic file to a local file
+更新日志：
+v1.4.0 版本 - 2024-5-20
 
-Markdown files are currently preferred
+- 功能优化
+  - 支持更多导出的文件类型：纯文本(txt)、excel、csv
+  - 导出单文件支持时间正序或倒序设置
+  - 导出过程体验优化：导出时增加全局 loading、单文件不使用压缩包等
+- 一些虫子
+  - 导出和内容中的图片不是原图
 
-1. Supports exporting dynamic lists of personal and Jike friends, it also supports exporting personal favorites
-2. Supports exporting complete information such as pictures, dynamic links, reference dynamics, etc.
-3. Note taking tools such as Obsidian and Heptabase can be seamlessly imported
+v1.3.0 版本 - 2024-5-14
+
+- 支持导出个人收藏
+- 支持是否单独导出图片设置

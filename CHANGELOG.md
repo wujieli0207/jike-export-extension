@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.4.0](https://github.com/wujieli0207/jike-export-extension/compare/v1.3.0...v1.4.0) (2024-05-20)
+
+
+### Features
+
+* markdown 导出单文件优化，不需要图片时直接导出为单文件 ([517873f](https://github.com/wujieli0207/jike-export-extension/commit/517873fdc03bb779a986cff0223d19580383db4d))
+* txt 单文件下载优化，不用 zip 打包直接下载 txt ([09bc1d4](https://github.com/wujieli0207/jike-export-extension/commit/09bc1d46c73d34f9deb94a2c2f65a8ea5024da8f))
+* 体验优化，导出时增加全局 loading ([80b90ba](https://github.com/wujieli0207/jike-export-extension/commit/80b90baf6129e92f266217cf90b1aa947af3a3d0))
+* 单文件导出支持设置时间排序方式 ([035183b](https://github.com/wujieli0207/jike-export-extension/commit/035183bbb31be3700efee784ee941ea3595d21bc))
+* 增加导出类型文件设置，导出 markdown 代码优化 ([3f12b82](https://github.com/wujieli0207/jike-export-extension/commit/3f12b82bf85a0bacd7655ddb5eb692b076716eb7))
+* 导出配置自动存储在 localstorage 中 ([264ca2c](https://github.com/wujieli0207/jike-export-extension/commit/264ca2c9044b4c656267474088248489dd5b7257))
+* 支持导出为 csv 文件格式 ([1ad7491](https://github.com/wujieli0207/jike-export-extension/commit/1ad74917a921d813ff0ebb284d58566fc0398121))
+* 支持导出为 excel 设置 ([8191435](https://github.com/wujieli0207/jike-export-extension/commit/81914352e0cc508017f1287b7a917f4ba89ff092))
+* 支持导出为 txt 纯文本文件 ([e15217e](https://github.com/wujieli0207/jike-export-extension/commit/e15217ef18c0cdeb85f81cf95a19b6efec75c1f6))
+* 进入页面时，根据是否激活展示激活验证内容 ([d3bb708](https://github.com/wujieli0207/jike-export-extension/commit/d3bb708e167f21f19e89fcb185a06b05e132c96d))
+
+
+### Bug Fixes
+
+* 获取的图片链接不是原图链接 ([857c363](https://github.com/wujieli0207/jike-export-extension/commit/857c363e3e009c9abd69d78cb24a3748274cc760))
+
 ## [1.3.0](https://github.com/wujieli0207/jike-export-extension/compare/v1.2.1...v1.3.0) (2024-05-12)
 
 
