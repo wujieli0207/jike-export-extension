@@ -321,7 +321,7 @@ export default function App() {
                 className="button"
                 onClick={() =>
                   window.open(
-                    'https://jike-export.lemonsqueezy.com/buy/702040dd-c006-464e-9cf3-2e200380d228' // 正式地址
+                    'https://jike-export.wujieli.com/payment' // 正式地址
                   )
                 }
               >
