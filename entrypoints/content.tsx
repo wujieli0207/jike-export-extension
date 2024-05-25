@@ -6,6 +6,7 @@ import {
   autoScroll,
   getJikeUrl,
   processAllImages,
+  getImageUrl,
 } from './popup/utils/exportHelper'
 import { handleExportFile } from './popup/utils/exportFile'
 import { handleHtmlToMd } from './popup/utils/exportFile/markdown'
@@ -111,10 +112,7 @@ async function getMemos(memos: HTMLDivElement) {
     // 单一图片
     const singleImageEl = imageContainerEl?.querySelector('img')
     if (singleImageEl) {
-      imgSrcList.push(
-        // 保证获取原图
-        singleImageEl.getAttribute('src')?.split('?')[0] as string
-      )
+      imgSrcList.push(getImageUrl(singleImageEl.getAttribute('src') ?? ''))
     }
     // 多张图片
     const multiImageEl = imageContainerEl?.querySelectorAll(

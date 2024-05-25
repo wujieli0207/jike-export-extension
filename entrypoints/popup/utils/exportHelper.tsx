@@ -113,7 +113,7 @@ export async function processAllImages(
         // 去掉"url("和")"，并处理可能的引号
         backgroundImage = backgroundImage.slice(4, -1).replace(/["']/g, '')
         // 去除图片后面的参数，直接加载原图
-        backgroundImage = backgroundImage.split('?')[0]
+        backgroundImage = getImageUrl(backgroundImage)
         multiImageList.push(backgroundImage)
       }
     } catch (error) {
@@ -122,4 +122,15 @@ export async function processAllImages(
   }
 
   return multiImageList
+}
+
+// 处理图片链接
+export function getImageUrl(url: string): string {
+  // 特殊处理苹果图片参数，截取 jpeg 的参数
+  if (url.includes('heic')) {
+    return url.replace(/(jpeg).*$/, 'jpeg')
+  }
+
+  // 去除图片后面的参数，直接加载原图
+  return url.split('?')[0]
 }
