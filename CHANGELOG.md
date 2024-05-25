@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.4.2](https://github.com/wujieli0207/jike-export-extension/compare/v1.4.1...v1.4.2) (2024-05-25)
+
+### Bug Fixes
+
+- 修复 heic 格式的图片展示异常问题 ([e7e1fc9](https://github.com/wujieli0207/jike-export-extension/commit/e7e1fc98122088ad0e3dac83c361f485ab1b9382))
+
 ### [1.4.1](https://github.com/wujieli0207/jike-export-extension/compare/v1.3.0...v1.4.1) (2024-05-22)
 
 ### Features
