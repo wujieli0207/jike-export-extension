@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.5.0](https://github.com/wujieli0207/jike-export-extension/compare/v1.4.2...v1.5.0) (2024-06-03)
+
+### Features
+
+- 增加导出范围筛选功能 ([801aafa](https://github.com/wujieli0207/jike-export-extension/commit/801aafa3d2429255d2026d1ec1abe231b23c92f0))
+-
+
 ## [1.4.2](https://github.com/wujieli0207/jike-export-extension/compare/v1.4.1...v1.4.2) (2024-05-25)
 
 ### Bug Fixes
