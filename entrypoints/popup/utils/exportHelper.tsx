@@ -1,6 +1,9 @@
 import ReactDOM from 'react-dom/client'
 import Loading from '../components/Loading'
-import { EXPORT_TIPS } from '../config'
+import { DATE_FORMAT_SHORT, EXPORT_TIPS } from '../config'
+import dayjs, { Dayjs } from 'dayjs'
+import { IExportConfig, IMemoResult } from '../types'
+import { moreFilterEnum } from '../const/exportConst'
 
 export function globalLoading(ctx: any) {
   const app = createIntegratedUi(ctx, {
@@ -40,7 +43,11 @@ export function globalLoading(ctx: any) {
   }
 }
 
-export function autoScroll(isVerified: boolean): Promise<boolean> {
+export function autoScroll(
+  isVerified: boolean,
+  startDate: Dayjs | null,
+  memoSelector: string
+): Promise<boolean> {
   return new Promise((resolve, reject) => {
     const isScrollBottom = () => {
       const result = document.querySelector(
@@ -58,11 +65,40 @@ export function autoScroll(isVerified: boolean): Promise<boolean> {
       resolve(true)
     }
 
+    // 是否在开始日期之前
+    const isAtStartDate = () => {
+      if (startDate) {
+        const totalMemos = document.querySelector(
+          memoSelector
+        ) as HTMLDivElement | null
+
+        if (!totalMemos) return false
+
+        const memosElList = totalMemos.children
+        // 没有到底部时，最后一条是 loading，loading 的前一条是动态
+        const lastMemo = memosElList[memosElList.length - 2]
+        const timeEl = lastMemo.querySelector('time')
+
+        if (!timeEl) return false
+
+        const currentDate = dayjs(
+          timeEl?.getAttribute('datetime') ?? ''
+        ).format(DATE_FORMAT_SHORT)
+
+        // 判断传入的开始日期是否在 当前最新动态时间 之前
+        return dayjs(dayjs(startDate).format(DATE_FORMAT_SHORT)).isAfter(
+          dayjs(currentDate)
+        )
+      }
+
+      return false
+    }
+
     // 标记在非激活的场景下，只用滚动 3 次就好
     let scrollCount = 0
 
     const intervalId = setInterval(() => {
-      if (isScrollBottom()) {
+      if (isScrollBottom() || isAtStartDate()) {
         quit()
       } else {
         scrollCount += 1
@@ -133,4 +169,45 @@ export function getImageUrl(url: string): string {
 
   // 去除图片后面的参数，直接加载原图
   return url.split('?')[0]
+}
+
+// TOOD 该方法待验证
+export function memoListFilter(
+  memoList: IMemoResult[],
+  isVerified: boolean,
+  config: IExportConfig
+) {
+  const { startDate, endDate, moreFilter } = config
+
+  let resultList = memoList.slice()
+
+  if (startDate) {
+    const startTime = dayjs(dayjs(startDate).format(DATE_FORMAT_SHORT))
+    resultList = resultList.filter((item) => {
+      const currentTime = item.time.split('_')[0]
+      return (
+        dayjs(currentTime).isAfter(startTime) ||
+        dayjs(currentTime).isSame(startTime)
+      )
+    })
+  }
+  if (endDate) {
+    const endTime = dayjs(dayjs(endDate).format(DATE_FORMAT_SHORT))
+    resultList = resultList.filter((item) => {
+      const currentTime = item.time.split('_')[0]
+      return (
+        dayjs(currentTime).isBefore(endTime) ||
+        dayjs(currentTime).isSame(endTime)
+      )
+    })
+  }
+
+  if (moreFilter === moreFilterEnum.ONLY_PICTURE) {
+    resultList = resultList.filter((item) => item.files.length > 0)
+  }
+  if (moreFilter === moreFilterEnum.EXCLUDE_PICTURE) {
+    resultList = resultList.filter((item) => item.files.length === 0)
+  }
+
+  return isVerified ? resultList : resultList.slice(0, 50)
 }

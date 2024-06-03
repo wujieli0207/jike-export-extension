@@ -1,5 +1,11 @@
+import { Dayjs } from 'dayjs'
 import { EXPORT_TYPE } from './config'
-import { ContentOrderTypeEnum, ExportTypeEnum } from './const/exportConst'
+import {
+  ContentOrderTypeEnum,
+  ExportTypeEnum,
+  FastDateRangeEnum,
+  moreFilterEnum,
+} from './const/exportConst'
 
 export interface IVerifyResult {
   isVerified: boolean // 是否通过密钥验证通过
@@ -11,6 +17,10 @@ export interface IExportConfig {
   isSingleFile: boolean // 是否导出为单一文件
   isDownloadImage: boolean // 是否下载图片
   contentOrder: ContentOrderTypeEnum // 内容排序，仅适用于单文件
+  fastDateRange: FastDateRangeEnum // 快速日期范围
+  startDate: Dayjs | null // 开始日期
+  endDate: Dayjs | null // 结束日期
+  moreFilter: moreFilterEnum | null // 是否开启更多筛选
 }
 
 export interface IMessage {

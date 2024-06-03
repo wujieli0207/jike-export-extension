@@ -30,3 +30,56 @@
   max-height: 1000px; /* 设定一个足够大的值来确保内容完全展开 */
   opacity: 1;
 }
+
+/* ant design Tab 组件 */
+.ant-tabs-nav-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+/* ant design Date 组件 */
+.ant-picker {
+  width: 100% !important;
+}
+
+/* 缩小日期选择面板 */
+.ant-picker-panel {
+  transform: scale(0.8);
+  transform-origin: top left;
+}
+
+/* 缩小日期选择面板整体宽高 */
+.ant-picker-panel-container.ant-picker-date-panel-container
+  > .ant-picker-panel-layout {
+  width: 240px;
+  height: 210px;
+}
+
+/* 日期选择面板距离顶部的距离 */
+.ant-picker-panel-container.ant-picker-date-panel-container .ant-picker-body {
+  padding-top: 0;
+}
+
+/* 每个日期项间距 */
+.ant-picker-panel-container.ant-picker-date-panel-container .ant-picker-cell {
+  padding: 0;
+}
+
+/* 调整日期选择面板内部元素的间距和字体大小 */
+.ant-picker-cell-inner,
+.ant-picker-header-view,
+.ant-picker-footer {
+  font-size: 12px;
+  padding: 4px;
+}
+
+/* 调整日期选择面板头部和底部的大小 */
+.ant-picker-header,
+.ant-picker-footer {
+  padding: 4px 8px;
+}
+
+/* 调整日期选择面板的宽度 */
+.ant-picker {
+  width: 200px;
+}

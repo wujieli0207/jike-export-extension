@@ -7,6 +7,7 @@ import {
   getJikeUrl,
   processAllImages,
   getImageUrl,
+  memoListFilter,
 } from './popup/utils/exportHelper'
 import { handleExportFile } from './popup/utils/exportFile'
 import { handleHtmlToMd } from './popup/utils/exportFile/markdown'
@@ -20,7 +21,10 @@ export default defineContentScript({
   cssInjectionMode: 'ui',
   main(ctx) {
     browser.runtime.onMessage.addListener(async function (message: IMessage) {
-      if (message.type !== EXPORT_TYPE) return
+      const { type, config } = message
+      const { startDate } = config
+
+      if (type !== EXPORT_TYPE) return
 
       const isVerified = message.isVerified
 
@@ -38,7 +42,7 @@ export default defineContentScript({
       openLoading()
 
       // 等待滚动，获取全部数据
-      await autoScroll(isVerified)
+      await autoScroll(isVerified, startDate, MEMOS_SELECTOR)
 
       closeLoading()
 
@@ -49,16 +53,14 @@ export default defineContentScript({
 
       const author = getAuthor()
       const memoList = await getMemos(totalMemos)
+      const filteredMemoList = memoListFilter(memoList, isVerified, config)
 
       // 数据二次处理
       // 未激活场景只取前 50 条
-      const newMemoList = contentParse(
-        isVerified ? memoList : memoList.slice(0, 50),
-        message.config
-      )
+      const newMemoList = contentParse(filteredMemoList, config)
 
       // 下载笔记
-      handleExportFile(newMemoList, author, message.config)
+      handleExportFile(newMemoList, author, config)
     })
   },
 })
