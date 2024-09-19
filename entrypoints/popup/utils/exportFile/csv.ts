@@ -4,7 +4,7 @@ import FileSaver from 'file-saver'
 import Papa from 'papaparse'
 import { IExportConfig, IMemoResult } from '../../types'
 import dayjs from 'dayjs'
-import { formatMdTime } from '../exportHelper'
+import { formatMdTime, getFileNameTimestamp } from '../exportHelper'
 import { DATE_FORMAT } from '../../config'
 import { ContentOrderTypeEnum } from '../../const/exportConst'
 
@@ -13,7 +13,7 @@ export async function handleExportAsSingleCsvFile(
   fileName: string,
   options: IExportConfig
 ) {
-  const { contentOrder } = options
+  const { isFileNameAddTimestamp, contentOrder } = options
 
   // 按照时间排序
   memos.sort((a, b) => {
@@ -46,5 +46,10 @@ export async function handleExportAsSingleCsvFile(
   const blob = new Blob([csvWithBom], { type: 'text/csv;charset=utf-8' })
 
   // 使用 FileSaver 保存文件
-  FileSaver.saveAs(blob, `${fileName}.csv`)
+  FileSaver.saveAs(
+    blob,
+    `${fileName}${
+      isFileNameAddTimestamp ? `-${getFileNameTimestamp()}` : ''
+    }.csv`
+  )
 }

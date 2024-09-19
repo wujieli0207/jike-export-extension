@@ -16,6 +16,7 @@ export interface IExportConfig {
   fileType: ExportTypeEnum // 导出文件类型
   isSingleFile: boolean // 是否导出为单一文件
   isDownloadImage: boolean // 是否下载图片
+  isFileNameAddTimestamp: boolean // 是否在文件名中添加时间戳
   contentOrder: ContentOrderTypeEnum // 内容排序，仅适用于单文件
   fastDateRange: FastDateRangeEnum // 快速日期范围
   startDate: Dayjs | null // 开始日期

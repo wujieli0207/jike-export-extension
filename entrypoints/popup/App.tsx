@@ -44,6 +44,7 @@ const defaultExportConfig: IExportConfig = {
   fileType: ExportTypeEnum.MD,
   isSingleFile: false,
   isDownloadImage: false,
+  isFileNameAddTimestamp: false,
   contentOrder: ContentOrderTypeEnum.DESC,
   fastDateRange: FastDateRangeEnum.ALL,
   startDate: null,
@@ -64,6 +65,7 @@ export default function App() {
     isShowImage: false,
     isShowSingleFile: false,
     isShowContentOrder: false,
+    isShowFileNameAddTimestamp: false,
   })
   const [isExpandVerified, setIsExpandVerified] = useState(false)
 
@@ -190,6 +192,10 @@ export default function App() {
       // 1. 肯定导出的是单文件，比如 excel、csv
       // 2. 选择导出的是单文件
       isShowContentOrder:
+        [ExportTypeEnum.EXCEL, ExportTypeEnum.CSV].includes(fileType) ||
+        isSingleFile,
+      // 和 isShowContentOrder 类似
+      isShowFileNameAddTimestamp:
         [ExportTypeEnum.EXCEL, ExportTypeEnum.CSV].includes(fileType) ||
         isSingleFile,
     })
@@ -319,6 +325,28 @@ export default function App() {
           </Flex>
         </Form.Item>
       )}
+
+      <Flex justify="space-between">
+        {showOptions.isShowFileNameAddTimestamp && (
+          <Form.Item style={{ marginBottom: '0px' }}>
+            <Tooltip placement="top" title="勾选后导出文件名结尾增加时间戳">
+              <Checkbox
+                disabled={!inJike}
+                checked={exportConfig.isFileNameAddTimestamp}
+                onChange={(e) => {
+                  const checked = e.target.checked
+                  setExportConfig({
+                    ...exportConfig,
+                    isFileNameAddTimestamp: checked,
+                  })
+                }}
+              >
+                导出文件增加时间戳
+              </Checkbox>
+            </Tooltip>
+          </Form.Item>
+        )}
+      </Flex>
     </>
   )
 

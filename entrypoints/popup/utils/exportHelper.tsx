@@ -1,6 +1,6 @@
 import ReactDOM from 'react-dom/client'
 import Loading from '../components/Loading'
-import { DATE_FORMAT_SHORT, EXPORT_TIPS } from '../config'
+import { DATE_FORMAT_SHORT, EXPORT_TIPS, FILE_DATE_FORMAT } from '../config'
 import dayjs, { Dayjs } from 'dayjs'
 import { IExportConfig, IMemoResult } from '../types'
 import { moreFilterEnum } from '../const/exportConst'
@@ -210,4 +210,8 @@ export function memoListFilter(
   }
 
   return isVerified ? resultList : resultList.slice(0, 50)
+}
+
+export function getFileNameTimestamp() {
+  return dayjs().format(FILE_DATE_FORMAT)
 }

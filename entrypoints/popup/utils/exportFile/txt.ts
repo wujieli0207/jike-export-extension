@@ -3,7 +3,7 @@ import Jszip from 'jszip'
 import FileSaver from 'file-saver'
 import { IExportConfig, IMemoResult } from '../../types'
 import dayjs from 'dayjs'
-import { formatMdTime } from '../exportHelper'
+import { formatMdTime, getFileNameTimestamp } from '../exportHelper'
 import { DATE_FORMAT } from '../../config'
 // @ts-ignore
 import { convert } from 'html-to-text'
@@ -32,7 +32,7 @@ export async function handleExportAsSingleTxtFile(
   fileName: string,
   options: IExportConfig
 ) {
-  const { contentOrder } = options
+  const { isFileNameAddTimestamp, contentOrder } = options
 
   // 完成内容
   let resultContent = ''
@@ -59,7 +59,12 @@ export async function handleExportAsSingleTxtFile(
   const blob = new Blob([resultContent], { type: 'text/plain;charset=utf-8' })
 
   // 使用 FileSaver 保存文件
-  FileSaver.saveAs(blob, `${fileName}.txt`)
+  FileSaver.saveAs(
+    blob,
+    `${fileName}${
+      isFileNameAddTimestamp ? `-${getFileNameTimestamp()}` : ''
+    }.txt`
+  )
 }
 
 export function handleHtmlToTxt(htmlString: string) {

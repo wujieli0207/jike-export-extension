@@ -3,7 +3,7 @@ import Jszip from 'jszip'
 import FileSaver from 'file-saver'
 import { IExportConfig, IMemoResult } from '../../types'
 import dayjs from 'dayjs'
-import { formatMdTime } from '../exportHelper'
+import { formatMdTime, getFileNameTimestamp } from '../exportHelper'
 import { DATE_FORMAT } from '../../config'
 import html2md from 'html-to-md'
 import { ContentOrderTypeEnum } from '../../const/exportConst'
@@ -54,7 +54,12 @@ export async function handleExportAsSingleMarkdownFile(
   fileName: string,
   options: IExportConfig
 ) {
-  const { isSingleFile, isDownloadImage, contentOrder } = options
+  const {
+    isSingleFile,
+    isDownloadImage,
+    isFileNameAddTimestamp,
+    contentOrder,
+  } = options
 
   // 完成内容
   let resultContent = ''
@@ -84,7 +89,12 @@ export async function handleExportAsSingleMarkdownFile(
       type: 'text/markdown;charset=utf-8',
     })
     // 使用 FileSaver 保存文件
-    FileSaver.saveAs(blob, `${fileName}.md`)
+    FileSaver.saveAs(
+      blob,
+      `${fileName}${
+        isFileNameAddTimestamp ? `-${getFileNameTimestamp()}` : ''
+      }.md`
+    )
   }
   // 其他场景使用 zip 打包下载
   else {

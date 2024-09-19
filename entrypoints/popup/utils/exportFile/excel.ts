@@ -3,7 +3,7 @@ import FileSaver from 'file-saver'
 import * as XLSX from 'xlsx'
 import { IExportConfig, IMemoResult } from '../../types'
 import dayjs from 'dayjs'
-import { formatMdTime } from '../exportHelper'
+import { formatMdTime, getFileNameTimestamp } from '../exportHelper'
 import { DATE_FORMAT } from '../../config'
 import { ContentOrderTypeEnum } from '../../const/exportConst'
 
@@ -12,7 +12,8 @@ export async function handleExportAsSingleExcelFile(
   fileName: string,
   options: IExportConfig
 ) {
-  const { contentOrder } = options
+  const { isFileNameAddTimestamp, contentOrder } = options
+  console.log('isFileNameAddTimestamp: ', isFileNameAddTimestamp)
 
   // 按照时间排序
   memos.sort((a, b) => {
@@ -46,5 +47,10 @@ export async function handleExportAsSingleExcelFile(
   const blob = new Blob([excelBuffer], { type: 'application/octet-stream' })
 
   // 使用 FileSaver 保存文件
-  FileSaver.saveAs(blob, `${fileName}.xlsx`)
+  FileSaver.saveAs(
+    blob,
+    `${fileName}${
+      isFileNameAddTimestamp ? `-${getFileNameTimestamp()}` : ''
+    }.xlsx`
+  )
 }
