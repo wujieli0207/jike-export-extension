@@ -13,12 +13,10 @@ export default defineContentScript({
   cssInjectionMode: 'ui',
   main(ctx) {
     browser.runtime.onMessage.addListener(async function (message: IMessage) {
-      const { type, config } = message
+      const { type, config, isVerified } = message
       const { startDate } = config
 
       if (type !== EXPORT_TYPE) return
-
-      const isVerified = message.isVerified
 
       if (
         !window.location.href.startsWith('https://web.okjike.com/u') ||
@@ -46,13 +44,14 @@ export default defineContentScript({
           throw new Error('未找到访问令牌，请确保已登录即刻网站')
         }
 
-        // 获取所有数据（包括分页），传入startDate参数和更新提示的函数
+        // 获取所有数据（包括分页），传入startDate参数、更新提示的函数和isVerified状态
         const allData = await fetchAllJikeData(
           username,
           accessToken,
           20,
           startDate,
-          updateLoadingTip
+          updateLoadingTip,
+          isVerified
         )
 
         if (allData && allData.length > 0) {
@@ -173,19 +172,22 @@ function createDynamicLoading(ctx: any) {
   }
 }
 
-// 修改fetchAllJikeData函数，接收updateTip参数
+// 修改fetchAllJikeData函数，接收isVerified参数
 async function fetchAllJikeData(
   username: string,
   accessToken: string,
   limit = 20,
   startDate?: dayjs.Dayjs | null,
-  updateTip?: (tip: string) => void
+  updateTip?: (tip: string) => void,
+  isVerified: boolean = true // 添加isVerified参数，默认为true
 ): Promise<any[]> {
   let allItems: any[] = []
   let loadMoreKey: any = null
   let hasMore = true
   let pageCount = 0
-  // const MAX_PAGES = 20000 // 暂时不使用，不知道动态会有多少，设置一个最大页数限制，防止无限循环
+
+  // 未验证用户的最大条数限制
+  const UNVERIFIED_MAX_ITEMS = 60
 
   // 如果有startDate，转换为Date对象用于比较
   // @ts-ignore
@@ -197,9 +199,22 @@ async function fetchAllJikeData(
   while (hasMore) {
     pageCount++
 
+    // 如果用户未验证且已达到条数限制，则停止获取更多数据
+    if (!isVerified && allItems.length >= UNVERIFIED_MAX_ITEMS) {
+      console.log(
+        `Unverified user reached item limit (${UNVERIFIED_MAX_ITEMS}), stopping pagination`
+      )
+      updateTip?.(
+        `未验证用户最多获取 ${UNVERIFIED_MAX_ITEMS} 条数据，已获取 ${allItems.length} 条...`
+      )
+      break
+    }
+
     // 更新加载提示
     updateTip?.(
-      `正在获取数据，第 ${pageCount} 页，已获取 ${allItems.length} 条...`
+      `正在获取数据，第 ${pageCount} 页，已获取 ${allItems.length} 条...${
+        !isVerified ? `（未验证用户最多获取 ${UNVERIFIED_MAX_ITEMS} 条）` : ''
+      }`
     )
 
     try {
@@ -247,19 +262,64 @@ async function fetchAllJikeData(
             response.data.length - filteredItems.length
           } items older than start date`
         )
-        allItems = allItems.concat(filteredItems)
+
+        // 对于未验证用户，限制添加的数据量
+        if (
+          !isVerified &&
+          allItems.length + filteredItems.length > UNVERIFIED_MAX_ITEMS
+        ) {
+          const itemsToAdd = filteredItems.slice(
+            0,
+            UNVERIFIED_MAX_ITEMS - allItems.length
+          )
+          allItems = allItems.concat(itemsToAdd)
+          console.log(
+            `Limited to ${UNVERIFIED_MAX_ITEMS} items for unverified user`
+          )
+        } else {
+          allItems = allItems.concat(filteredItems)
+        }
+
         hasMore = false // 停止获取更多页
 
         // 更新提示，告知用户已达到开始日期
         updateTip?.(`已达到开始日期，共获取 ${allItems.length} 条数据...`)
       } else {
-        // 添加当前页的所有数据到结果数组
-        allItems = allItems.concat(response.data)
+        // 对于未验证用户，限制添加的数据量
+        if (
+          !isVerified &&
+          allItems.length + response.data.length > UNVERIFIED_MAX_ITEMS
+        ) {
+          const itemsToAdd = response.data.slice(
+            0,
+            UNVERIFIED_MAX_ITEMS - allItems.length
+          )
+          allItems = allItems.concat(itemsToAdd)
+          console.log(
+            `Limited to ${UNVERIFIED_MAX_ITEMS} items for unverified user`
+          )
+          hasMore = false // 已达到限制，停止获取更多页
+        } else {
+          // 添加当前页的所有数据到结果数组
+          allItems = allItems.concat(response.data)
+        }
 
         // 更新加载提示，显示当前获取的数据量
+        const limitMessage = !isVerified
+          ? `（未验证用户最多获取 ${UNVERIFIED_MAX_ITEMS} 条）`
+          : ''
         updateTip?.(
-          `正在获取数据，第 ${pageCount} 页，已获取 ${allItems.length} 条...`
+          `正在获取数据，第 ${pageCount} 页，已获取 ${allItems.length} 条...${limitMessage}`
         )
+      }
+
+      // 如果未验证用户已达到条数限制，停止获取更多数据
+      if (!isVerified && allItems.length >= UNVERIFIED_MAX_ITEMS) {
+        console.log(
+          `Unverified user reached item limit (${UNVERIFIED_MAX_ITEMS}), stopping pagination`
+        )
+        hasMore = false
+        continue
       }
 
       // 如果已经到达开始日期，不再继续获取数据
@@ -306,7 +366,13 @@ async function fetchAllJikeData(
   )
 
   // 最终更新提示
-  updateTip?.(`数据获取完成，共 ${pageCount} 页，${allItems.length} 条数据`)
+  const limitMessage =
+    !isVerified && allItems.length >= UNVERIFIED_MAX_ITEMS
+      ? `（未验证用户限制为 ${UNVERIFIED_MAX_ITEMS} 条）`
+      : ''
+  updateTip?.(
+    `数据获取完成，共 ${pageCount} 页，${allItems.length} 条数据 ${limitMessage}`
+  )
 
   return allItems
 }

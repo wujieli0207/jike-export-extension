@@ -481,7 +481,7 @@ export default function App() {
         />
         {isVerified
           ? '您已激活，支持导出全部动态'
-          : '未激活仅支持导出 50 条即刻动态'}
+          : '未激活仅支持导出 60 条即刻动态'}
       </span>
       <div
         className={`verified-content ${
