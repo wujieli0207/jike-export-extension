@@ -5,8 +5,6 @@ import { IExportConfig, IMemoResult } from '../../types'
 import dayjs from 'dayjs'
 import { formatMdTime, getFileNameTimestamp } from '../exportHelper'
 import { DATE_FORMAT } from '../../config'
-// @ts-ignore
-import { convert } from 'html-to-text'
 import { ContentOrderTypeEnum } from '../../const/exportConst'
 
 // === 导出为 txt 文件 ===
@@ -65,13 +63,4 @@ export async function handleExportAsSingleTxtFile(
       isFileNameAddTimestamp ? `-${getFileNameTimestamp()}` : ''
     }.txt`
   )
-}
-
-export function handleHtmlToTxt(htmlString: string) {
-  const txtString = convert(htmlString)
-  const result = txtString
-    // 回复动态后面的链接
-    .replace(/\[\/u\/[a-z0-9-]+\]/gi, '')
-
-  return result
 }
