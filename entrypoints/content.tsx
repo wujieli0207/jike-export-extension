@@ -32,7 +32,7 @@ export default defineContentScript({
 
       openLoading('正在准备导出数据...')
 
-      // 从URL中提取用户名
+      // 从URL中提取用户名(id)
       const urlParts = window.location.pathname.split('/')
       const username = urlParts[urlParts.length - 1]
 
@@ -68,12 +68,15 @@ export default defineContentScript({
           )
           const newMemoList = contentParse(filteredMemoList, config)
 
-          // 获取作者信息
-          const author = getAuthor(allData)
+          // 获取作者信息(结果拼接 动态 / 收藏)
+          const author = await fetchUserProfile(accessToken)
+          const authorInfo = getIsCollectionPage()
+            ? `${author}的收藏`
+            : `${author}的动态`
 
           updateLoadingTip(`正在生成导出文件...`)
           // 下载笔记
-          handleExportFile(newMemoList, author, config)
+          handleExportFile(newMemoList, authorInfo, config)
         } else {
           console.error('Failed to fetch data: No data returned')
           alert('获取数据失败，请重试')
@@ -90,23 +93,6 @@ export default defineContentScript({
     })
   },
 })
-
-function getAuthor(apiData: any[]): string {
-  // If there's no data, return empty string
-  if (!apiData || apiData.length === 0) {
-    return ''
-  }
-
-  // Get the first item from the data array
-  const firstItem = apiData[0]
-
-  // Extract the user's screenName from the data
-  if (firstItem && firstItem.user && firstItem.user.screenName) {
-    return firstItem.user.screenName
-  }
-
-  return ''
-}
 
 // 创建可以动态更新提示的loading组件
 function createDynamicLoading(ctx: any) {
@@ -384,7 +370,9 @@ async function fetchJikeData(
   limit = 20,
   loadMoreKey: any = null
 ) {
-  const url = 'https://api.ruguoapp.com/1.0/personalUpdate/single'
+  const url = getIsCollectionPage()
+    ? 'https://api.ruguoapp.com/1.0/collections/list'
+    : 'https://api.ruguoapp.com/1.0/personalUpdate/single'
 
   const headers = {
     accept: 'application/json, text/plain, */*',
@@ -527,4 +515,47 @@ function convertApiDataToMemoFormat(apiData: any): IMemoResult[] {
       files: files.filter((url) => url), // 过滤空URL
     }
   })
+}
+
+// 新增获取用户信息的函数
+async function fetchUserProfile(accessToken: string): Promise<string> {
+  const url = 'https://api.ruguoapp.com/1.0/users/profile'
+
+  const headers = {
+    accept: 'application/json, text/plain, */*',
+    'accept-language': 'en-US,en;q=0.9',
+    'content-type': 'application/json',
+    origin: 'https://web.okjike.com',
+    'sec-fetch-dest': 'empty',
+    'sec-fetch-mode': 'cors',
+    'sec-fetch-site': 'cross-site',
+    'user-agent':
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36',
+    'x-jike-access-token': accessToken,
+  }
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: headers,
+    })
+
+    if (!response.ok) {
+      throw new Error(`API request failed with status ${response.status}`)
+    }
+
+    const data = await response.json()
+    if (!data.user?.screenName) {
+      throw new Error('Failed to get user screenName from profile')
+    }
+
+    return data.user.screenName
+  } catch (error) {
+    console.error('Error fetching user profile:', error)
+    throw error
+  }
+}
+
+function getIsCollectionPage() {
+  return window.location.pathname.endsWith('/collection')
 }
