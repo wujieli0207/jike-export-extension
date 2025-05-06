@@ -69,7 +69,9 @@ export default defineContentScript({
           const newMemoList = contentParse(filteredMemoList, config)
 
           // 获取作者信息(结果拼接 动态 / 收藏)
-          const author = await fetchUserProfile(accessToken)
+          // 优先取返回结果的
+          const author =
+            allData[0].user.screenName || (await fetchUserProfile(accessToken))
           const authorInfo = getIsCollectionPage()
             ? `${author}的收藏`
             : `${author}的动态`
