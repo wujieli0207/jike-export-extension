@@ -84,8 +84,7 @@ const MemoCard: React.FC<MemoCardProps> = ({ memo, onCardClick }) => {
           {/* Minimal display of other files, e.g., count or small icons */}
           {memo.files.length > 1 && (
             <Text type="secondary" style={{ fontSize: '12px' }}>
-              (+{memo.files.length - 1} more image
-              {memo.files.length - 1 > 1 ? 's' : ''})
+              (还有 {memo.files.length - 1} 张图片)
             </Text>
           )}
         </div>
