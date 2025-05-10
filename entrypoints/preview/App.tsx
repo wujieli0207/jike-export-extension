@@ -9,13 +9,25 @@ import {
   Image as AntImage,
   Avatar,
   Input,
+  message,
+  Dropdown,
 } from 'antd'
 import 'antd/dist/reset.css' // Import Ant Design styles
-import type { IMemoResult } from '../popup/types' // Adjust path as necessary
+import type { IMemoResult, IExportConfig } from '../popup/types' // Adjust path as necessary
 import MemoCard from './components/MemoCard'
 import jikeLogo from '~/assets/jike.png'
 import Markdown from './components/markdown'
 import { formatMdTime } from '@/entrypoints/popup/utils/exportHelper'
+import { handleExportFile } from '@/entrypoints/popup/utils/exportFile'
+import { contentParse } from '@/entrypoints/popup/utils/parse'
+import {
+  ExportTypeEnum,
+  ExportTypeList,
+} from '@/entrypoints/popup/const/exportConst'
+import { getLocalExportConfig } from '../popup/utils/user'
+import dayjs from 'dayjs'
+import { defaultExportConfig } from '../popup/App'
+import { DownOutlined } from '@ant-design/icons'
 
 const { Sider, Content } = Layout
 const { Title } = Typography
@@ -35,6 +47,10 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState<string>('')
+  const [exporting, setExporting] = useState(false)
+
+  const [exportConfig, setExportConfig] =
+    useState<IExportConfig>(defaultExportConfig)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -58,6 +74,20 @@ export default function App() {
     }
 
     fetchData()
+
+    // 从 localstorage 加载上一次导出的配置信息
+    getLocalExportConfig().then((result) => {
+      if (result) {
+        const { startDate, endDate, moreFilter } = result
+        setExportConfig({
+          ...defaultExportConfig,
+          ...result,
+          startDate: startDate ? dayjs(startDate) : null,
+          endDate: endDate ? dayjs(endDate) : null,
+          moreFilter: moreFilter ? moreFilter : null,
+        })
+      }
+    })
   }, [])
 
   const handleCategorySelect = (key: string) => {
@@ -77,6 +107,43 @@ export default function App() {
 
   const handleSearch = (value: string) => {
     setSearchQuery(value.trim())
+  }
+
+  // Handle export functionality
+  const handleExport = async ({
+    fileType,
+  }: {
+    fileType: IExportConfig['fileType']
+  }) => {
+    if (!previewData || !previewData.memoList.length) {
+      message.error('没有数据可导出')
+      return
+    }
+
+    try {
+      setExporting(true)
+
+      // Get the memoList and apply any current filters
+      let memosToExport = searchFilteredMemos
+
+      const config = {
+        ...exportConfig,
+        fileType,
+      }
+
+      // Apply content parsing
+      const parsedMemos = contentParse(memosToExport, config)
+
+      // Export the file
+      handleExportFile(parsedMemos, previewData.authorInfo, config)
+    } catch (error) {
+      console.error('Export error:', error)
+      message.error(
+        '导出失败: ' + (error instanceof Error ? error.message : String(error))
+      )
+    } finally {
+      setExporting(false)
+    }
   }
 
   if (loading) {
@@ -226,7 +293,14 @@ export default function App() {
         {' '}
         {/* Add margin to main layout to accommodate fixed sider */}
         <Content style={{ padding: '24px', margin: 0, minHeight: 280 }}>
-          <div style={{ marginBottom: '24px' }}>
+          <div
+            style={{
+              marginBottom: '24px',
+              display: 'flex',
+              gap: '12px',
+              alignItems: 'center',
+            }}
+          >
             <div style={{ width: '300px' }}>
               <Search
                 placeholder="搜索区域"
@@ -234,6 +308,25 @@ export default function App() {
                 onSearch={handleSearch}
               />
             </div>
+            <Dropdown.Button
+              type="primary"
+              loading={exporting}
+              onClick={() => {
+                handleExport({ fileType: exportConfig.fileType })
+              }}
+              icon={<DownOutlined />}
+              menu={{
+                items: ExportTypeList.map((item) => ({
+                  key: item.value,
+                  label: item.label,
+                })),
+                onClick: ({ key }) => {
+                  handleExport({ fileType: key as ExportTypeEnum })
+                },
+              }}
+            >
+              导出
+            </Dropdown.Button>
           </div>
           {memoList.length > 0 ? (
             searchFilteredMemos.length > 0 ? (

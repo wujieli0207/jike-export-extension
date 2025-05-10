@@ -40,7 +40,7 @@ type FieldType = {
   newLicenseKey?: string
 }
 
-const defaultExportConfig: IExportConfig = {
+export const defaultExportConfig: IExportConfig = {
   fileType: ExportTypeEnum.MD,
   isSingleFile: false,
   isDownloadImage: false,
