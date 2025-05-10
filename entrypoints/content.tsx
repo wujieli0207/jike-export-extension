@@ -568,7 +568,10 @@ function getIsCollectionPage() {
 }
 
 // 添加新函数用于在新标签页中打开数据
-async function openDataInNewTab(newMemoList: any[], authorInfo: string) {
+async function openDataInNewTab(
+  newMemoList: IMemoResult[],
+  authorInfo: string
+) {
   // 将数据存储到 storage 中以便新标签页访问
   await browser.storage.local.set({
     previewData: {
@@ -581,6 +584,6 @@ async function openDataInNewTab(newMemoList: any[], authorInfo: string) {
   // 打开新标签页
   await browser.runtime.sendMessage({
     action: 'openPreviewTab',
-    url: browser.runtime.getURL('preview.html'),
+    url: browser.runtime.getURL('/preview.html'),
   })
 }

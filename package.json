@@ -22,12 +22,14 @@
     "dayjs": "^1.11.10",
     "file-saver": "^2.0.5",
     "jszip": "^3.10.1",
+    "markdown-it": "^14.1.0",
     "papaparse": "^5.4.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@types/markdown-it": "^14.1.2",
     "@types/react": "^18.2.46",
     "@types/react-dom": "^18.2.18",
     "@vitejs/plugin-react": "^4.2.1",
