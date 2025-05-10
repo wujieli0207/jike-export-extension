@@ -13,7 +13,7 @@ export default defineContentScript({
   cssInjectionMode: 'ui',
   main(ctx) {
     browser.runtime.onMessage.addListener(async function (message: IMessage) {
-      const { type, config, isVerified } = message
+      const { type, config, isVerified, openInNewTab } = message
       const { startDate } = config
 
       if (type !== EXPORT_TYPE) return
@@ -76,9 +76,14 @@ export default defineContentScript({
             ? `${author}的收藏`
             : `${author}的动态`
 
-          updateLoadingTip(`正在生成导出文件...`)
-          // 下载笔记
-          handleExportFile(newMemoList, authorInfo, config)
+          if (openInNewTab) {
+            updateLoadingTip(`正在准备新页面预览...`)
+            await openDataInNewTab(newMemoList, authorInfo)
+          } else {
+            updateLoadingTip(`正在生成导出文件...`)
+            // 下载笔记
+            handleExportFile(newMemoList, authorInfo, config)
+          }
         } else {
           console.error('Failed to fetch data: No data returned')
           alert('获取数据失败，请重试')
@@ -560,4 +565,22 @@ async function fetchUserProfile(accessToken: string): Promise<string> {
 
 function getIsCollectionPage() {
   return window.location.pathname.endsWith('/collection')
+}
+
+// 添加新函数用于在新标签页中打开数据
+async function openDataInNewTab(newMemoList: any[], authorInfo: string) {
+  // 将数据存储到 storage 中以便新标签页访问
+  await browser.storage.local.set({
+    previewData: {
+      memoList: newMemoList,
+      authorInfo: authorInfo,
+      timestamp: Date.now(), // 添加时间戳以便清理旧数据
+    },
+  })
+
+  // 打开新标签页
+  await browser.runtime.sendMessage({
+    action: 'openPreviewTab',
+    url: browser.runtime.getURL('preview.html'),
+  })
 }

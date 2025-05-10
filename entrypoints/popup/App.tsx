@@ -139,8 +139,10 @@ export default function App() {
     })
   }, [])
 
-  const handleExport = async () => {
-    setIsClickExport(true)
+  const handleExport = async (openInNewTab: boolean = false) => {
+    if (!openInNewTab) {
+      setIsClickExport(true)
+    }
 
     // 存储当前当初选项至 localstorage 中
     await storage.setItem(EXPORT_CONFIG, JSON.stringify(exportConfig))
@@ -156,6 +158,7 @@ export default function App() {
           config: {
             ...exportConfig,
           },
+          openInNewTab,
         }
         browser.runtime.sendMessage(message)
       }
@@ -445,9 +448,22 @@ export default function App() {
         <Form.Item>
           {inJike ? (
             <>
-              <Button type="primary" className="button" onClick={handleExport}>
-                {isClickExport ? EXPORT_TIPS : '导出'}
-              </Button>
+              <div className="button-group">
+                <Button
+                  type="primary"
+                  className="button"
+                  onClick={() => handleExport(false)}
+                >
+                  {isClickExport ? EXPORT_TIPS : '导出'}
+                </Button>
+                <Button
+                  type="default"
+                  className="button"
+                  onClick={() => handleExport(true)}
+                >
+                  新页面查看
+                </Button>
+              </div>
               <div style={{ fontSize: '12px' }}>{exportTips}</div>
             </>
           ) : (

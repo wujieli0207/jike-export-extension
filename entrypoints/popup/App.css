@@ -6,8 +6,12 @@
 }
 
 .button {
-  min-width: 160px;
   width: 100%;
+}
+
+.button-group {
+  display: flex;
+  gap: 10px;
 }
 
 .verified-header {
