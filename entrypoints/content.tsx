@@ -7,6 +7,7 @@ import { contentParse } from './popup/utils/parse'
 import { useState } from 'react'
 import Loading from './popup/components/Loading'
 import { createRoot } from 'react-dom/client'
+import { ExportTypeEnum } from './popup/const/exportConst'
 
 export default defineContentScript({
   matches: ['*://*.okjike.com/*'],
@@ -14,7 +15,13 @@ export default defineContentScript({
   main(ctx) {
     browser.runtime.onMessage.addListener(async function (message: IMessage) {
       const { type, config, isVerified, openInNewTab } = message
-      const { startDate } = config
+      const { startDate, fileType } = config
+
+      const modifyConfig = {
+        ...config,
+        // 如果是在新标签页中打开，默认使用 markdown
+        fileType: openInNewTab ? ExportTypeEnum.MD : fileType,
+      }
 
       if (type !== EXPORT_TYPE) return
 
@@ -64,9 +71,9 @@ export default defineContentScript({
           const filteredMemoList = memoListFilter(
             memoResultList,
             isVerified,
-            config
+            modifyConfig
           )
-          const newMemoList = contentParse(filteredMemoList, config)
+          const newMemoList = contentParse(filteredMemoList, modifyConfig)
 
           // 获取作者信息(结果拼接 动态 / 收藏)
           // 优先取返回结果的
@@ -82,7 +89,7 @@ export default defineContentScript({
           } else {
             updateLoadingTip(`正在生成导出文件...`)
             // 下载笔记
-            handleExportFile(newMemoList, authorInfo, config)
+            handleExportFile(newMemoList, authorInfo, modifyConfig)
           }
         } else {
           console.error('Failed to fetch data: No data returned')
