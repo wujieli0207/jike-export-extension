@@ -6,9 +6,9 @@ import {
   Spin,
   Typography,
   Empty,
-  Grid,
   Image as AntImage,
   Avatar,
+  Input,
 } from 'antd'
 import 'antd/dist/reset.css' // Import Ant Design styles
 import type { IMemoResult } from '../popup/types' // Adjust path as necessary
@@ -19,7 +19,7 @@ import { formatMdTime } from '@/entrypoints/popup/utils/exportHelper'
 
 const { Sider, Content } = Layout
 const { Title } = Typography
-const { useBreakpoint } = Grid
+const { Search } = Input
 
 interface PreviewData {
   memoList: IMemoResult[]
@@ -34,6 +34,7 @@ export default function App() {
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState<string>('')
 
   useEffect(() => {
     const fetchData = async () => {
@@ -61,10 +62,10 @@ export default function App() {
 
   const handleCategorySelect = (key: string) => {
     setSelectedCategory(key)
+    setSearchQuery('')
   }
 
   const handleCardClick = (memo: IMemoResult) => {
-    console.log('memo: ', memo)
     setVisibleMemo(memo)
     setIsModalVisible(true)
   }
@@ -72,6 +73,10 @@ export default function App() {
   const handleModalClose = () => {
     setIsModalVisible(false)
     setVisibleMemo(null)
+  }
+
+  const handleSearch = (value: string) => {
+    setSearchQuery(value.trim())
   }
 
   if (loading) {
@@ -166,12 +171,20 @@ export default function App() {
         })
       : memoList // Should be handled by default selection
 
-  // Auto-select "All" category if none is selected
-  // useEffect(() => {
-  //   if (!selectedCategory && sidebarMenuItems.length > 0) {
-  //     setSelectedCategory(ALL_CATEGORY_KEY) // Default to "All"
-  //   }
-  // }, [sidebarMenuItems, selectedCategory])
+  // Apply search filter on top of category filter
+  const searchFilteredMemos = searchQuery
+    ? filteredMemos.filter((memo) => {
+        const content = (memo.content || memo.rawContent || '').toLowerCase()
+        const circleTitle = memo.memoCircle?.title?.toLowerCase() || ''
+        const contentCircleTitle =
+          memo.contentCircle?.title?.toLowerCase() || ''
+        return (
+          content.includes(searchQuery.toLowerCase()) ||
+          circleTitle.includes(searchQuery.toLowerCase()) ||
+          contentCircleTitle.includes(searchQuery.toLowerCase())
+        )
+      })
+    : filteredMemos
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -213,8 +226,17 @@ export default function App() {
         {' '}
         {/* Add margin to main layout to accommodate fixed sider */}
         <Content style={{ padding: '24px', margin: 0, minHeight: 280 }}>
+          <div style={{ marginBottom: '24px' }}>
+            <div style={{ width: '300px' }}>
+              <Search
+                placeholder="搜索区域"
+                allowClear
+                onSearch={handleSearch}
+              />
+            </div>
+          </div>
           {memoList.length > 0 ? (
-            filteredMemos.length > 0 ? (
+            searchFilteredMemos.length > 0 ? (
               <div
                 style={{
                   display: 'grid',
@@ -222,7 +244,7 @@ export default function App() {
                   gap: '16px',
                 }}
               >
-                {filteredMemos.map((memo, index) => (
+                {searchFilteredMemos.map((memo, index) => (
                   <MemoCard
                     key={memo.memoLink || index}
                     memo={memo}
@@ -233,7 +255,9 @@ export default function App() {
             ) : (
               <Empty
                 description={
-                  selectedCategory
+                  searchQuery
+                    ? `未找到与 "${searchQuery}" 相关的动态`
+                    : selectedCategory
                     ? `"${
                         sidebarMenuItems.find(
                           (item) => item.key === selectedCategory
