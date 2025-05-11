@@ -3,7 +3,7 @@
   "description": "Export jike content",
   "author": "JackyLi",
   "private": true,
-  "version": "2.0.3",
+  "version": "2.1.0",
   "type": "module",
   "scripts": {
     "dev": "wxt",
@@ -22,6 +22,7 @@
     "dayjs": "^1.11.10",
     "file-saver": "^2.0.5",
     "jszip": "^3.10.1",
+    "linkify-it": "^5.0.0",
     "markdown-it": "^14.1.0",
     "papaparse": "^5.4.1",
     "react": "^18.2.0",
