@@ -9,6 +9,9 @@ import {
   Input,
   message,
   Dropdown,
+  Switch,
+  ConfigProvider,
+  theme,
 } from 'antd'
 import 'antd/dist/reset.css' // Import Ant Design styles
 import type { IMemoResult, IExportConfig } from '../popup/types' // Adjust path as necessary
@@ -23,7 +26,7 @@ import {
 import { getLocalExportConfig } from '../popup/utils/user'
 import dayjs from 'dayjs'
 import { defaultExportConfig } from '../popup/App'
-import { DownOutlined } from '@ant-design/icons'
+import { DownOutlined, MoonOutlined, SunOutlined } from '@ant-design/icons'
 import { MasonryPhotoAlbum } from 'react-photo-album'
 import 'react-photo-album/masonry.css'
 import InfiniteScroll from 'react-photo-album/scroll'
@@ -59,6 +62,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [exporting, setExporting] = useState(false)
+  const [themeMode, setThemeMode] = useState<'light' | 'dark'>('light')
 
   const [exportConfig, setExportConfig] =
     useState<IExportConfig>(defaultExportConfig)
@@ -118,6 +122,11 @@ export default function App() {
 
   const handleSearch = (value: string) => {
     setSearchQuery(value.trim())
+  }
+
+  // Handle theme change
+  const handleThemeChange = (checked: boolean) => {
+    setThemeMode(checked ? 'dark' : 'light')
   }
 
   // Handle export functionality
@@ -326,161 +335,156 @@ export default function App() {
   }
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Sider
-        width={250}
-        theme="light"
-        style={{
-          borderRight: '1px solid #f0f0f0',
-          position: 'fixed',
-          left: 0,
-          top: 0,
-          bottom: 0,
-          overflow: 'auto',
-        }}
-      >
-        <div
+    <ConfigProvider
+      theme={{
+        algorithm:
+          themeMode === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm,
+      }}
+    >
+      <Layout style={{ minHeight: '100vh' }}>
+        <Sider
+          theme={themeMode === 'dark' ? 'dark' : 'light'}
+          width={250}
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '12px',
-            marginBottom: '12px',
-            borderBottom: '1px solid #f0f0f0',
+            borderRight: '1px solid #f0f0f0',
+            position: 'fixed',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            overflow: 'auto',
           }}
         >
-          <Avatar shape="square" src={jikeLogo} />
-          <Title style={{ marginBottom: '0px', marginLeft: '10px' }} level={4}>
-            {authorInfo}
-          </Title>
-        </div>
-        <Menu
-          mode="inline"
-          selectedKeys={selectedCategory ? [selectedCategory] : []}
-          onClick={({ key }) => handleCategorySelect(key)}
-          items={sidebarMenuItems}
-        />
-      </Sider>
-      <Layout style={{ marginLeft: 250 }}>
-        {' '}
-        {/* Add margin to main layout to accommodate fixed sider */}
-        <Content style={{ padding: '24px', margin: 0, minHeight: 280 }}>
           <div
             style={{
-              marginBottom: '24px',
               display: 'flex',
-              gap: '12px',
               alignItems: 'center',
+              justifyContent: 'center',
+              padding: '12px',
+              marginBottom: '12px',
+              borderBottom: '1px solid #f0f0f0',
             }}
           >
-            <div style={{ width: '300px' }}>
-              <Search
-                placeholder="搜索区域"
-                allowClear
-                onSearch={handleSearch}
-              />
-            </div>
-            <Dropdown.Button
-              type="primary"
-              loading={exporting}
-              onClick={() => {
-                handleExport({ fileType: exportConfig.fileType })
-              }}
-              icon={<DownOutlined />}
-              menu={{
-                items: ExportTypeList.map((item) => ({
-                  key: item.value,
-                  label: item.label,
-                })),
-                onClick: ({ key }) => {
-                  handleExport({ fileType: key as ExportTypeEnum })
-                },
+            <Avatar shape="square" src={jikeLogo} />
+            <Title
+              style={{ marginBottom: '0px', marginLeft: '10px' }}
+              level={4}
+            >
+              {authorInfo}
+            </Title>
+          </div>
+          <Menu
+            mode="inline"
+            selectedKeys={selectedCategory ? [selectedCategory] : []}
+            onClick={({ key }) => handleCategorySelect(key)}
+            items={sidebarMenuItems}
+          />
+        </Sider>
+        <Layout style={{ marginLeft: 250 }}>
+          {' '}
+          {/* Add margin to main layout to accommodate fixed sider */}
+          <Content style={{ padding: '24px', margin: 0, minHeight: 280 }}>
+            <div
+              style={{
+                marginBottom: '24px',
+                display: 'flex',
+                gap: '12px',
+                alignItems: 'center',
               }}
             >
-              导出
-            </Dropdown.Button>
-          </div>
-          {memoList.length > 0 ? (
-            searchFilteredMemos.length > 0 ? (
-              <InfiniteScroll
-                photos={photoAlbumImages.slice(0, BATCH_SIZE)} // Initial batch
-                fetch={fetchPhotos}
-                // singleton
-                key={`${selectedCategory || 'all'}-${searchQuery}`} // Force re-render on filter change, ensure selectedCategory has a fallback for key
-                // loading={
-                //   <div style={{ textAlign: 'center', padding: '20px' }}>
-                //     <Spin tip="Loading more..." />
-                //   </div>
-                // }
-                // finished={
-                //   <div style={{ textAlign: 'center', padding: '20px' }}>
-                //     All photos loaded.
-                //   </div>
-                // }
-                // error={
-                //   <div
-                //     style={{
-                //       textAlign: 'center',
-                //       padding: '20px',
-                //       color: 'red',
-                //     }}
-                //   >
-                //     Error loading more photos.
-                //   </div>
-                // }
-              >
-                <MasonryPhotoAlbum
-                  photos={[]} // InfiniteScroll will provide photos to this
-                  columns={getColumns}
-                  render={{
-                    photo: ({}, { photo }) => (
-                      <div
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          padding: '8px', // Keep internal padding for the card
-                          boxSizing: 'border-box',
-                        }}
-                        onClick={() =>
-                          handleCardClick((photo as MemoPhoto).memo)
-                        }
-                      >
-                        <MemoCard
-                          memo={(photo as MemoPhoto).memo}
-                          onCardClick={handleCardClick}
-                        />
-                      </div>
-                    ),
-                  }}
+              <div style={{ width: '300px' }}>
+                <Search
+                  placeholder="搜索区域"
+                  allowClear
+                  onSearch={handleSearch}
                 />
-              </InfiniteScroll>
-            ) : (
-              <Empty
-                description={
-                  searchQuery
-                    ? `未找到与 "${searchQuery}" 相关的动态`
-                    : selectedCategory
-                    ? `"${
-                        sidebarMenuItems.find(
-                          (item) => item.key === selectedCategory
-                        )?.label || selectedCategory
-                      }" 分类下没有动态`
-                    : '没有动态'
-                }
+              </div>
+              <Dropdown.Button
+                type="primary"
+                loading={exporting}
+                onClick={() => {
+                  handleExport({ fileType: exportConfig.fileType })
+                }}
+                icon={<DownOutlined />}
+                menu={{
+                  items: ExportTypeList.map((item) => ({
+                    key: item.value,
+                    label: item.label,
+                  })),
+                  onClick: ({ key }) => {
+                    handleExport({ fileType: key as ExportTypeEnum })
+                  },
+                }}
+              >
+                导出
+              </Dropdown.Button>
+              <Switch
+                checkedChildren={<SunOutlined />}
+                unCheckedChildren={<MoonOutlined />}
+                checked={themeMode === 'dark'}
+                onChange={handleThemeChange}
+                style={{ marginLeft: '12px' }}
               />
-            )
-          ) : (
-            <Empty description={'没有获取到动态数据，请检查导出或刷新页面'} />
-          )}
-        </Content>
-      </Layout>
+            </div>
+            {memoList.length > 0 ? (
+              searchFilteredMemos.length > 0 ? (
+                <InfiniteScroll
+                  photos={photoAlbumImages.slice(0, BATCH_SIZE)} // Initial batch
+                  fetch={fetchPhotos}
+                  key={`${selectedCategory || 'all'}-${searchQuery}`} // Force re-render on filter change, ensure selectedCategory has a fallback for key
+                >
+                  <MasonryPhotoAlbum
+                    photos={[]} // InfiniteScroll will provide photos to this
+                    columns={getColumns}
+                    render={{
+                      photo: ({}, { photo }) => (
+                        <div
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            padding: '8px', // Keep internal padding for the card
+                            boxSizing: 'border-box',
+                          }}
+                          onClick={() =>
+                            handleCardClick((photo as MemoPhoto).memo)
+                          }
+                        >
+                          <MemoCard
+                            memo={(photo as MemoPhoto).memo}
+                            onCardClick={handleCardClick}
+                          />
+                        </div>
+                      ),
+                    }}
+                  />
+                </InfiniteScroll>
+              ) : (
+                <Empty
+                  description={
+                    searchQuery
+                      ? `未找到与 "${searchQuery}" 相关的动态`
+                      : selectedCategory
+                      ? `"${
+                          sidebarMenuItems.find(
+                            (item) => item.key === selectedCategory
+                          )?.label || selectedCategory
+                        }" 分类下没有动态`
+                      : '没有动态'
+                  }
+                />
+              )
+            ) : (
+              <Empty description={'没有获取到动态数据，请检查导出或刷新页面'} />
+            )}
+          </Content>
+        </Layout>
 
-      {/* 卡片详情弹窗 */}
-      <CardModal
-        memo={visibleMemo}
-        isModalVisible={isModalVisible}
-        handleModalClose={handleModalClose}
-      />
-    </Layout>
+        {/* 卡片详情弹窗 */}
+        <CardModal
+          memo={visibleMemo}
+          isModalVisible={isModalVisible}
+          handleModalClose={handleModalClose}
+        />
+      </Layout>
+    </ConfigProvider>
   )
 }
