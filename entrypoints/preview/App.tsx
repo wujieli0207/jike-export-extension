@@ -1,12 +1,10 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import {
   Layout,
   Menu,
-  Modal,
   Spin,
   Typography,
   Empty,
-  Image as AntImage,
   Avatar,
   Input,
   message,
@@ -16,8 +14,6 @@ import 'antd/dist/reset.css' // Import Ant Design styles
 import type { IMemoResult, IExportConfig } from '../popup/types' // Adjust path as necessary
 import MemoCard from './components/MemoCard'
 import jikeLogo from '~/assets/jike.png'
-import Markdown from './components/markdown'
-import { formatMdTime } from '@/entrypoints/popup/utils/exportHelper'
 import { handleExportFile } from '@/entrypoints/popup/utils/exportFile'
 import { contentParse } from '@/entrypoints/popup/utils/parse'
 import {
@@ -28,6 +24,10 @@ import { getLocalExportConfig } from '../popup/utils/user'
 import dayjs from 'dayjs'
 import { defaultExportConfig } from '../popup/App'
 import { DownOutlined } from '@ant-design/icons'
+import { MasonryPhotoAlbum } from 'react-photo-album'
+import 'react-photo-album/masonry.css'
+import InfiniteScroll from 'react-photo-album/scroll'
+import CardModal from './components/CardModal'
 
 const { Sider, Content } = Layout
 const { Title } = Typography
@@ -38,6 +38,17 @@ interface PreviewData {
   authorInfo: string
   timestamp: number
 }
+
+// Type definition for the photo-album item structure
+interface MemoPhoto {
+  src: string
+  width: number
+  height: number
+  memo: IMemoResult
+  key: string
+}
+
+const BATCH_SIZE = 20
 
 export default function App() {
   const [previewData, setPreviewData] = useState<PreviewData | null>(null)
@@ -146,6 +157,32 @@ export default function App() {
     }
   }
 
+  // Convert memos to the format needed by react-photo-album
+  const memoToPhotoFormat = useCallback((memos: IMemoResult[]): MemoPhoto[] => {
+    return memos.map((memo, index) => {
+      // Default dimensions for memos without images
+      let width = 300
+      let height = 250
+      let src = ''
+
+      // If memo has images, use the first one
+      if (memo.files && memo.files.length > 0) {
+        src = memo.files[0]
+        // Preset dimensions for image cards - can be adjusted for better layout
+        width = 300
+        height = 300
+      }
+
+      return {
+        src,
+        width,
+        height,
+        memo,
+        key: memo.memoLink || `memo-${index}`,
+      }
+    })
+  }, [])
+
   if (loading) {
     return (
       <div
@@ -253,6 +290,41 @@ export default function App() {
       })
     : filteredMemos
 
+  // Convert filtered memos to photo format for react-photo-album
+  const photoAlbumImages = memoToPhotoFormat(searchFilteredMemos)
+
+  // Fetch function for InfiniteScroll
+  const fetchPhotos = async (index: number): Promise<MemoPhoto[] | null> => {
+    const startIndex = index * BATCH_SIZE
+    const totalPhotos = photoAlbumImages.length
+
+    // If the calculated start index is at or beyond the total number of photos,
+    // it means all photos have been loaded.
+    if (startIndex >= totalPhotos) {
+      return null
+    }
+
+    // Determine the end index for the slice for the current batch.
+    // This ensures we don't try to slice beyond the bounds of the photoAlbumImages array.
+    const endIndex = Math.min(startIndex + BATCH_SIZE, totalPhotos)
+
+    // Slice the array to get the next batch of photos.
+    const nextBatch = photoAlbumImages.slice(startIndex, endIndex)
+
+    // Optional: Simulate network delay for testing spinners
+    // await new Promise(resolve => setTimeout(resolve, 500));
+    return nextBatch
+  }
+
+  // Calculate responsive columns based on viewport width
+  // This mimics the behavior of the previous grid implementation
+  const getColumns = (width: number) => {
+    if (width < 600) return 1
+    if (width < 900) return 2
+    if (width < 1200) return 3
+    return 4
+  }
+
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Sider
@@ -330,21 +402,58 @@ export default function App() {
           </div>
           {memoList.length > 0 ? (
             searchFilteredMemos.length > 0 ? (
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-                  gap: '16px',
-                }}
+              <InfiniteScroll
+                photos={photoAlbumImages.slice(0, BATCH_SIZE)} // Initial batch
+                fetch={fetchPhotos}
+                // singleton
+                key={`${selectedCategory || 'all'}-${searchQuery}`} // Force re-render on filter change, ensure selectedCategory has a fallback for key
+                // loading={
+                //   <div style={{ textAlign: 'center', padding: '20px' }}>
+                //     <Spin tip="Loading more..." />
+                //   </div>
+                // }
+                // finished={
+                //   <div style={{ textAlign: 'center', padding: '20px' }}>
+                //     All photos loaded.
+                //   </div>
+                // }
+                // error={
+                //   <div
+                //     style={{
+                //       textAlign: 'center',
+                //       padding: '20px',
+                //       color: 'red',
+                //     }}
+                //   >
+                //     Error loading more photos.
+                //   </div>
+                // }
               >
-                {searchFilteredMemos.map((memo, index) => (
-                  <MemoCard
-                    key={memo.memoLink || index}
-                    memo={memo}
-                    onCardClick={handleCardClick}
-                  />
-                ))}
-              </div>
+                <MasonryPhotoAlbum
+                  photos={[]} // InfiniteScroll will provide photos to this
+                  columns={getColumns}
+                  render={{
+                    photo: ({}, { photo }) => (
+                      <div
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          padding: '8px', // Keep internal padding for the card
+                          boxSizing: 'border-box',
+                        }}
+                        onClick={() =>
+                          handleCardClick((photo as MemoPhoto).memo)
+                        }
+                      >
+                        <MemoCard
+                          memo={(photo as MemoPhoto).memo}
+                          onCardClick={handleCardClick}
+                        />
+                      </div>
+                    ),
+                  }}
+                />
+              </InfiniteScroll>
             ) : (
               <Empty
                 description={
@@ -365,68 +474,13 @@ export default function App() {
           )}
         </Content>
       </Layout>
-      <Modal
-        title={
-          visibleMemo?.memoCircle?.title ||
-          visibleMemo?.contentCircle?.title ||
-          '未分类动态'
-        }
-        open={isModalVisible}
-        onCancel={handleModalClose}
-        footer={null}
-        width={600}
-        styles={{
-          header: {
-            textAlign: 'center',
-          },
-        }}
-      >
-        {visibleMemo && (
-          <div style={{ marginTop: '32px' }}>
-            <Typography.Paragraph style={{ whiteSpace: 'pre-wrap' }}>
-              <Markdown
-                content={(
-                  visibleMemo.content || visibleMemo.rawContent
-                ).replace(/!\[.*?\]\(.*?\)/g, '')}
-              />
-            </Typography.Paragraph>
-            {visibleMemo.files && visibleMemo.files.length > 0 && (
-              <div style={{ marginTop: '16px', marginBottom: '16px' }}>
-                <AntImage.PreviewGroup
-                  preview={{
-                    onChange: (current, prev) =>
-                      console.log(
-                        `current index: ${current}, prev index: ${prev}`
-                      ),
-                  }}
-                >
-                  <div
-                    style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}
-                  >
-                    {visibleMemo.files.map((file, idx) => (
-                      <AntImage
-                        key={idx}
-                        width={100}
-                        src={file}
-                        alt={`media_${idx}`}
-                        style={{
-                          borderRadius: '4px',
-                          objectFit: 'cover',
-                          height: '100px',
-                        }}
-                      />
-                    ))}
-                  </div>
-                </AntImage.PreviewGroup>
-              </div>
-            )}
 
-            <Typography.Text type="secondary">
-              {formatMdTime(visibleMemo?.time)}
-            </Typography.Text>
-          </div>
-        )}
-      </Modal>
+      {/* 卡片详情弹窗 */}
+      <CardModal
+        memo={visibleMemo}
+        isModalVisible={isModalVisible}
+        handleModalClose={handleModalClose}
+      />
     </Layout>
   )
 }

@@ -11,12 +11,12 @@ interface MemoCardProps {
 }
 
 const MemoCard: React.FC<MemoCardProps> = ({ memo, onCardClick }) => {
-  const hasVisualContent = memo.files.length > 0 || memo.contentCircle?.url
   const mainImage = memo.files.length > 0 ? memo.files[0] : undefined
 
   return (
     <Card
       hoverable
+      style={{ height: '100%' }}
       styles={{ body: { height: '100%' } }}
       cover={
         mainImage && (
