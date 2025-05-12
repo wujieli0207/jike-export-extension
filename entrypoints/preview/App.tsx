@@ -16,7 +16,7 @@ import {
 import 'antd/dist/reset.css' // Import Ant Design styles
 import type { IMemoResult, IExportConfig } from '../popup/types' // Adjust path as necessary
 import MemoCard from './components/MemoCard'
-import jikeLogo from '~/assets/jike.png'
+import logo from '~/assets/logo.png'
 import { handleExportFile } from '@/entrypoints/popup/utils/exportFile'
 import { contentParse } from '@/entrypoints/popup/utils/parse'
 import {
@@ -364,7 +364,7 @@ export default function App() {
               borderBottom: '1px solid #f0f0f0',
             }}
           >
-            <Avatar shape="square" src={jikeLogo} />
+            <Avatar shape="square" src={logo} />
             <Title
               style={{ marginBottom: '0px', marginLeft: '10px' }}
               level={4}
