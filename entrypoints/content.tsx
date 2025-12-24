@@ -15,12 +15,19 @@ export default defineContentScript({
   main(ctx) {
     browser.runtime.onMessage.addListener(async function (message: IMessage) {
       const { type, config, isVerified, openInNewTab } = message
-      const { startDate, fileType } = config
+      const { startDate: startDateStr, endDate: endDateStr, fileType } = config
+
+      // 接收后将 ISO 字符串转换回 Dayjs 对象
+      const startDate = startDateStr ? dayjs(startDateStr) : null
+      const endDate = endDateStr ? dayjs(endDateStr) : null
 
       const modifyConfig = {
         ...config,
         // 如果是在新标签页中打开，默认使用 markdown
         fileType: openInNewTab ? ExportTypeEnum.MD : fileType,
+        // 使用转换后的 Dayjs 对象
+        startDate,
+        endDate,
       }
 
       if (type !== EXPORT_TYPE) return
@@ -189,9 +196,8 @@ async function fetchAllJikeData(
   // 未验证用户的最大条数限制
   const UNVERIFIED_MAX_ITEMS = 60
 
-  // 如果有startDate，转换为Date对象用于比较
-  // @ts-ignore
-  const startDateTime = startDate ? new Date(startDate).getTime() : null
+  // 如果有startDate，转换为时间戳用于比较
+  const startDateTime = startDate ? startDate.valueOf() : null
 
   // 更新初始加载提示
   updateTip?.(`正在获取数据，第 ${pageCount} 页...`)
@@ -233,85 +239,64 @@ async function fetchAllJikeData(
         continue
       }
 
-      // 检查是否有数据早于startDate
-      let reachedStartDate = false
-      if (startDateTime) {
-        for (const item of response.data) {
-          const itemDate = new Date(item.actionTime || item.createdAt).getTime()
-          if (itemDate < startDateTime) {
-            console.log(
-              `Found item older than start date: ${new Date(
-                itemDate
-              ).toISOString()}`
-            )
-            reachedStartDate = true
-            break
-          }
-        }
-      }
+      // 检查是否所有数据都早于startDate（只有这种情况才停止获取）
+      let allItemsBeforeStartDate = false
 
-      // 如果找到早于startDate的数据，只添加符合日期条件的数据
-      if (startDateTime && reachedStartDate) {
-        const filteredItems = response.data.filter((item: any) => {
+      if (startDateTime) {
+        // 检查这一页是否所有数据都比 startDate 早
+        allItemsBeforeStartDate = response.data.every((item: any) => {
           const itemDate = new Date(item.actionTime || item.createdAt).getTime()
-          return itemDate >= startDateTime
+          return itemDate < startDateTime
         })
 
+        if (allItemsBeforeStartDate) {
+          console.log(`Page ${pageCount}: 所有数据都早于 startDate，停止获取`)
+        }
+      }
+
+      // 过滤出在日期范围内的数据（如果设置了 startDate）
+      const itemsToProcess = startDateTime
+        ? response.data.filter((item: any) => {
+            const itemDate = new Date(
+              item.actionTime || item.createdAt
+            ).getTime()
+            return itemDate >= startDateTime
+          })
+        : response.data
+
+      if (startDateTime) {
         console.log(
-          `Filtered ${
-            response.data.length - filteredItems.length
-          } items older than start date`
-        )
-
-        // 对于未验证用户，限制添加的数据量
-        if (
-          !isVerified &&
-          allItems.length + filteredItems.length > UNVERIFIED_MAX_ITEMS
-        ) {
-          const itemsToAdd = filteredItems.slice(
-            0,
-            UNVERIFIED_MAX_ITEMS - allItems.length
-          )
-          allItems = allItems.concat(itemsToAdd)
-          console.log(
-            `Limited to ${UNVERIFIED_MAX_ITEMS} items for unverified user`
-          )
-        } else {
-          allItems = allItems.concat(filteredItems)
-        }
-
-        hasMore = false // 停止获取更多页
-
-        // 更新提示，告知用户已达到开始日期
-        updateTip?.(`已达到开始日期，共获取 ${allItems.length} 条数据...`)
-      } else {
-        // 对于未验证用户，限制添加的数据量
-        if (
-          !isVerified &&
-          allItems.length + response.data.length > UNVERIFIED_MAX_ITEMS
-        ) {
-          const itemsToAdd = response.data.slice(
-            0,
-            UNVERIFIED_MAX_ITEMS - allItems.length
-          )
-          allItems = allItems.concat(itemsToAdd)
-          console.log(
-            `Limited to ${UNVERIFIED_MAX_ITEMS} items for unverified user`
-          )
-          hasMore = false // 已达到限制，停止获取更多页
-        } else {
-          // 添加当前页的所有数据到结果数组
-          allItems = allItems.concat(response.data)
-        }
-
-        // 更新加载提示，显示当前获取的数据量
-        const limitMessage = !isVerified
-          ? `（未验证用户最多获取 ${UNVERIFIED_MAX_ITEMS} 条）`
-          : ''
-        updateTip?.(
-          `正在获取数据，第 ${pageCount} 页，已获取 ${allItems.length} 条...${limitMessage}`
+          `Page ${pageCount}: 过滤掉 ${
+            response.data.length - itemsToProcess.length
+          } 条早于 startDate 的数据，保留 ${itemsToProcess.length} 条`
         )
       }
+
+      // 对于未验证用户，限制添加的数据量
+      if (
+        !isVerified &&
+        allItems.length + itemsToProcess.length > UNVERIFIED_MAX_ITEMS
+      ) {
+        const itemsToAdd = itemsToProcess.slice(
+          0,
+          UNVERIFIED_MAX_ITEMS - allItems.length
+        )
+        allItems = allItems.concat(itemsToAdd)
+        console.log(
+          `Limited to ${UNVERIFIED_MAX_ITEMS} items for unverified user`
+        )
+        hasMore = false
+      } else {
+        allItems = allItems.concat(itemsToProcess)
+      }
+
+      // 更新加载提示
+      const limitMessage = !isVerified
+        ? `（未验证用户最多获取 ${UNVERIFIED_MAX_ITEMS} 条）`
+        : ''
+      updateTip?.(
+        `正在获取数据，第 ${pageCount} 页，已获取 ${allItems.length} 条...${limitMessage}`
+      )
 
       // 如果未验证用户已达到条数限制，停止获取更多数据
       if (!isVerified && allItems.length >= UNVERIFIED_MAX_ITEMS) {
@@ -322,9 +307,9 @@ async function fetchAllJikeData(
         continue
       }
 
-      // 如果已经到达开始日期，不再继续获取数据
-      if (reachedStartDate) {
-        console.log(`Reached start date, stopping pagination`)
+      // 如果所有数据都早于 startDate，说明后面的数据也都更早，停止获取
+      if (allItemsBeforeStartDate) {
+        console.log(`All items before start date, stopping pagination`)
         hasMore = false
         continue
       }

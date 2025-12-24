@@ -152,11 +152,14 @@ export default function App() {
       const tid = activeTab.id ?? -1
 
       if (activeTab && tid > 0) {
-        const message: IMessage = {
+        const message = {
           type: EXPORT_TYPE,
           isVerified: !!isVerified,
           config: {
             ...exportConfig,
+            // 发送前将 Dayjs 转为 ISO 字符串，避免序列化丢失
+            startDate: exportConfig.startDate?.toISOString() ?? null,
+            endDate: exportConfig.endDate?.toISOString() ?? null,
           },
           openInNewTab,
         }
