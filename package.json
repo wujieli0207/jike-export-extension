@@ -3,7 +3,7 @@
   "description": "Export jike content",
   "author": "JackyLi",
   "private": true,
-  "version": "2.1.2",
+  "version": "2.1.3",
   "type": "module",
   "scripts": {
     "dev": "wxt",

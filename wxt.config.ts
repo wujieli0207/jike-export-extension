@@ -8,6 +8,7 @@ export default defineConfig({
   }),
   manifest: {
     permissions: ['tabs', 'storage'],
+    host_permissions: ['https://api.lemonsqueezy.com/*'],
     name: '即刻导出',
     description: '导出即刻动态为本地文件',
   },

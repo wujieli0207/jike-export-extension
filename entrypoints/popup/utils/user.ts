@@ -25,26 +25,24 @@ export async function getUserInfo() {
   // 如果输入的密钥和验证的密钥不同，需要调用服务请求验证
   if (newLicenseKey && verifiedResult?.verifiedLisence !== newLicenseKey) {
     try {
-      const response = await fetch(
-        'https://api.lemonsqueezy.com/v1/licenses/validate',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            license_key: newLicenseKey,
-          }),
-        }
-      )
-      const result = await response.json() // 可以使用这个来进行额外的操作
-
-      isVerified = result.valid
-
-      storage.setItem<IVerifyResult>(VERIFY_RESULT, {
-        isVerified: !!result.valid,
-        verifiedLisence: result.license_key?.key ?? '',
+      // 通过 background script 验证 license
+      const response = await browser.runtime.sendMessage({
+        action: 'validateLicense',
+        licenseKey: newLicenseKey,
       })
+
+      if (response?.success && response?.data) {
+        const result = response.data
+
+        isVerified = result.valid
+
+        storage.setItem<IVerifyResult>(VERIFY_RESULT, {
+          isVerified: !!result.valid,
+          verifiedLisence: result.license_key?.key ?? '',
+        })
+      } else {
+        console.error('License validation failed:', response?.error)
+      }
     } catch (error) {
       console.error('error: ', error)
     }
