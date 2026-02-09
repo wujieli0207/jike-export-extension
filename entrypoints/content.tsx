@@ -14,7 +14,7 @@ export default defineContentScript({
   cssInjectionMode: 'ui',
   main(ctx) {
     browser.runtime.onMessage.addListener(async function (message: IMessage) {
-      const { type, config, isVerified, openInNewTab } = message
+      const { type, config, isVerified, openInNewTab, topicMaxItems } = message
       const { startDate: startDateStr, endDate: endDateStr, fileType } = config
 
       // 接收后将 ISO 字符串转换回 Dayjs 对象
@@ -32,11 +32,13 @@ export default defineContentScript({
 
       if (type !== EXPORT_TYPE) return
 
-      if (
-        !window.location.href.startsWith('https://web.okjike.com/u') ||
-        window.location.pathname.includes('/post/')
-      ) {
-        alert('请进入一个用户的动态列表操作')
+      const isUserPage =
+        window.location.href.startsWith('https://web.okjike.com/u') &&
+        !window.location.pathname.includes('/post/')
+      const isTopicPage = getIsTopicPage()
+
+      if (!isUserPage && !isTopicPage) {
+        alert('请进入一个用户的动态列表或圈子广场页面操作')
         return
       }
 
@@ -46,9 +48,10 @@ export default defineContentScript({
 
       openLoading('正在准备导出数据...')
 
-      // 从URL中提取用户名(id)
+      // 根据页面类型提取不同的 ID
       const urlParts = window.location.pathname.split('/')
-      const username = urlParts[urlParts.length - 1]
+      const username = isTopicPage ? '' : urlParts[urlParts.length - 1]
+      const topicId = isTopicPage ? getTopicIdFromUrl() : ''
 
       try {
         // 从localStorage获取token
@@ -65,7 +68,9 @@ export default defineContentScript({
           20,
           startDate,
           updateLoadingTip,
-          isVerified
+          isVerified,
+          topicId,
+          topicMaxItems
         )
 
         if (allData && allData.length > 0) {
@@ -83,12 +88,18 @@ export default defineContentScript({
           const newMemoList = contentParse(filteredMemoList, modifyConfig)
 
           // 获取作者信息(结果拼接 动态 / 收藏)
-          // 优先取返回结果的
-          const author =
-            allData[0].user.screenName || (await fetchUserProfile(accessToken))
-          const authorInfo = getIsCollectionPage()
-            ? `${author}的收藏`
-            : `${author}的动态`
+          let authorInfo: string
+          if (isTopicPage) {
+            const topicName = allData[0]?.topic?.content || '圈子'
+            authorInfo = `${topicName}的广场`
+          } else {
+            const author =
+              allData[0].user.screenName ||
+              (await fetchUserProfile(accessToken))
+            authorInfo = getIsCollectionPage()
+              ? `${author}的收藏`
+              : `${author}的动态`
+          }
 
           if (openInNewTab) {
             updateLoadingTip(`正在准备新页面预览...`)
@@ -186,12 +197,23 @@ async function fetchAllJikeData(
   limit = 20,
   startDate?: dayjs.Dayjs | null,
   updateTip?: (tip: string) => void,
-  isVerified: boolean = true // 添加isVerified参数，默认为true
+  isVerified: boolean = true, // 添加isVerified参数，默认为true
+  topicId?: string,
+  topicMaxItems?: number
 ): Promise<any[]> {
   let allItems: any[] = []
   let loadMoreKey: any = null
   let hasMore = true
   let pageCount = 0
+
+  const isTopicMode = !!topicId
+
+  // 圈子模式使用 topicMaxItems（默认200，最大1000），用户模式未验证限制60条
+  const MAX_ITEMS = isTopicMode
+    ? Math.min(topicMaxItems || 200, 1000)
+    : !isVerified
+      ? 60
+      : Infinity
 
   // 未验证用户的最大条数限制
   const UNVERIFIED_MAX_ITEMS = 60
@@ -205,21 +227,30 @@ async function fetchAllJikeData(
   while (hasMore) {
     pageCount++
 
-    // 如果用户未验证且已达到条数限制，则停止获取更多数据
-    if (!isVerified && allItems.length >= UNVERIFIED_MAX_ITEMS) {
-      console.log(
-        `Unverified user reached item limit (${UNVERIFIED_MAX_ITEMS}), stopping pagination`
-      )
-      updateTip?.(
-        `未验证用户最多获取 ${UNVERIFIED_MAX_ITEMS} 条数据，已获取 ${allItems.length} 条...`
-      )
+    // 如果已达到条数限制，则停止获取更多数据
+    if (allItems.length >= MAX_ITEMS) {
+      if (isTopicMode) {
+        console.log(
+          `Topic mode reached item limit (${MAX_ITEMS}), stopping pagination`
+        )
+        updateTip?.(
+          `圈子最多获取 ${MAX_ITEMS} 条数据，已获取 ${allItems.length} 条...`
+        )
+      } else {
+        console.log(
+          `Unverified user reached item limit (${UNVERIFIED_MAX_ITEMS}), stopping pagination`
+        )
+        updateTip?.(
+          `未验证用户最多获取 ${UNVERIFIED_MAX_ITEMS} 条数据，已获取 ${allItems.length} 条...`
+        )
+      }
       break
     }
 
     // 更新加载提示
     updateTip?.(
       `正在获取数据，第 ${pageCount} 页，已获取 ${allItems.length} 条...${
-        !isVerified ? `（未验证用户最多获取 ${UNVERIFIED_MAX_ITEMS} 条）` : ''
+        MAX_ITEMS !== Infinity ? `（最多获取 ${MAX_ITEMS} 条）` : ''
       }`
     )
 
@@ -229,7 +260,8 @@ async function fetchAllJikeData(
         username,
         accessToken,
         limit,
-        loadMoreKey
+        loadMoreKey,
+        topicId
       )
 
       // 检查响应是否有效
@@ -272,18 +304,18 @@ async function fetchAllJikeData(
         )
       }
 
-      // 对于未验证用户，限制添加的数据量
+      // 限制添加的数据量（圈子模式或未验证用户）
       if (
-        !isVerified &&
-        allItems.length + itemsToProcess.length > UNVERIFIED_MAX_ITEMS
+        MAX_ITEMS !== Infinity &&
+        allItems.length + itemsToProcess.length > MAX_ITEMS
       ) {
         const itemsToAdd = itemsToProcess.slice(
           0,
-          UNVERIFIED_MAX_ITEMS - allItems.length
+          MAX_ITEMS - allItems.length
         )
         allItems = allItems.concat(itemsToAdd)
         console.log(
-          `Limited to ${UNVERIFIED_MAX_ITEMS} items for unverified user`
+          `Limited to ${MAX_ITEMS} items`
         )
         hasMore = false
       } else {
@@ -291,17 +323,16 @@ async function fetchAllJikeData(
       }
 
       // 更新加载提示
-      const limitMessage = !isVerified
-        ? `（未验证用户最多获取 ${UNVERIFIED_MAX_ITEMS} 条）`
-        : ''
+      const limitMessage =
+        MAX_ITEMS !== Infinity ? `（最多获取 ${MAX_ITEMS} 条）` : ''
       updateTip?.(
         `正在获取数据，第 ${pageCount} 页，已获取 ${allItems.length} 条...${limitMessage}`
       )
 
-      // 如果未验证用户已达到条数限制，停止获取更多数据
-      if (!isVerified && allItems.length >= UNVERIFIED_MAX_ITEMS) {
+      // 如果已达到条数限制，停止获取更多数据
+      if (MAX_ITEMS !== Infinity && allItems.length >= MAX_ITEMS) {
         console.log(
-          `Unverified user reached item limit (${UNVERIFIED_MAX_ITEMS}), stopping pagination`
+          `Reached item limit (${MAX_ITEMS}), stopping pagination`
         )
         hasMore = false
         continue
@@ -352,8 +383,8 @@ async function fetchAllJikeData(
 
   // 最终更新提示
   const limitMessage =
-    !isVerified && allItems.length >= UNVERIFIED_MAX_ITEMS
-      ? `（未验证用户限制为 ${UNVERIFIED_MAX_ITEMS} 条）`
+    MAX_ITEMS !== Infinity && allItems.length >= MAX_ITEMS
+      ? `（限制为 ${MAX_ITEMS} 条）`
       : ''
   updateTip?.(
     `数据获取完成，共 ${pageCount} 页，${allItems.length} 条数据 ${limitMessage}`
@@ -367,11 +398,16 @@ async function fetchJikeData(
   username: string,
   accessToken: string,
   limit = 20,
-  loadMoreKey: any = null
+  loadMoreKey: any = null,
+  topicId?: string
 ) {
-  const url = getIsCollectionPage()
-    ? 'https://api.ruguoapp.com/1.0/collections/list'
-    : 'https://api.ruguoapp.com/1.0/personalUpdate/single'
+  const isTopicMode = !!topicId
+
+  const url = isTopicMode
+    ? 'https://api.ruguoapp.com/1.0/topics/tabs/square/feed'
+    : getIsCollectionPage()
+      ? 'https://api.ruguoapp.com/1.0/collections/list'
+      : 'https://api.ruguoapp.com/1.0/personalUpdate/single'
 
   const headers = {
     accept: 'application/json, text/plain, */*',
@@ -386,10 +422,15 @@ async function fetchJikeData(
     'x-jike-access-token': accessToken,
   }
 
-  // 构建请求体，根据是否有loadMoreKey添加相应参数
+  // 构建请求体，根据页面类型添加相应参数
   const requestBody: any = {
     limit: limit,
-    username: username,
+  }
+
+  if (isTopicMode) {
+    requestBody.topicId = topicId
+  } else {
+    requestBody.username = username
   }
 
   // 如果有loadMoreKey，添加到请求体
@@ -553,6 +594,15 @@ async function fetchUserProfile(accessToken: string): Promise<string> {
     console.error('Error fetching user profile:', error)
     throw error
   }
+}
+
+function getIsTopicPage() {
+  return window.location.pathname.startsWith('/topic/')
+}
+
+function getTopicIdFromUrl(): string {
+  const parts = window.location.pathname.split('/')
+  return parts[2] // index 0='', 1='topic', 2='{topicId}'
 }
 
 function getIsCollectionPage() {

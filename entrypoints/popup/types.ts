@@ -29,6 +29,7 @@ export interface IMessage {
   isVerified: boolean // 是否通过密钥验证通过
   config: IExportConfig
   openInNewTab: boolean // 是否在新的标签页中打开
+  topicMaxItems?: number // 圈子导出最大条数
 }
 
 export interface ILink {

@@ -11,6 +11,7 @@ import {
   Form,
   FormProps,
   Input,
+  InputNumber,
   Select,
   Tabs,
   TabsProps,
@@ -58,6 +59,8 @@ export default function App() {
   const [isClickExport, setIsClickExport] = useState(false)
   const [inJike, setIsInJike] = useState(false)
   const [isVerified, setIsVerified] = useState<boolean | null>(false)
+  const [isTopicPage, setIsTopicPage] = useState(false)
+  const [topicMaxItems, setTopicMaxItems] = useState(200)
 
   const [exportConfig, setExportConfig] =
     useState<IExportConfig>(defaultExportConfig)
@@ -108,6 +111,11 @@ export default function App() {
     browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
       const url = tabs[0].url ?? ''
       setIsInJike(url.includes(JIKE_URL))
+      try {
+        setIsTopicPage(new URL(url).pathname.startsWith('/topic/'))
+      } catch {
+        setIsTopicPage(false)
+      }
     })
 
     getNewLicenseKey().then((result) => {
@@ -162,6 +170,7 @@ export default function App() {
             endDate: exportConfig.endDate?.toISOString() ?? null,
           },
           openInNewTab,
+          ...(isTopicPage ? { topicMaxItems } : {}),
         }
         browser.runtime.sendMessage(message)
       }
@@ -358,6 +367,24 @@ export default function App() {
 
   const exportFilterComponent = () => (
     <>
+      {isTopicPage && (
+        <Form.Item style={{ marginBottom: '8px' }}>
+          <Flex justify="space-between" align="center">
+            <span style={{ width: '90px', marginRight: '12px' }}>最大条数: </span>
+            <InputNumber
+              size="small"
+              min={1}
+              max={1000}
+              step={100}
+              value={topicMaxItems}
+              disabled={!inJike}
+              style={{ width: '100%' }}
+              onChange={(value) => setTopicMaxItems(value ?? 200)}
+            />
+          </Flex>
+        </Form.Item>
+      )}
+
       <Form.Item style={{ marginBottom: '8px' }}>
         <Flex justify="space-between" align="center">
           <span style={{ width: '90px', marginRight: '12px' }}>快捷选项: </span>
