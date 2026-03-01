@@ -1,18 +1,30 @@
 import dayjs from 'dayjs'
 import { EXPORT_TYPE, FILE_DATE_FORMAT } from './popup/config'
-import { IMemoResult, IMessage } from './popup/types'
+import { IMemoResult, IMessage, IExportConfig } from './popup/types'
 import { globalLoading, memoListFilter } from './popup/utils/exportHelper'
 import { handleExportFile } from './popup/utils/exportFile'
 import { contentParse } from './popup/utils/parse'
 import { useState } from 'react'
 import Loading from './popup/components/Loading'
 import { createRoot } from 'react-dom/client'
-import { ExportTypeEnum } from './popup/const/exportConst'
+import {
+  ExportTypeEnum,
+  ContentOrderTypeEnum,
+  FastDateRangeEnum,
+} from './popup/const/exportConst'
 
 export default defineContentScript({
   matches: ['*://*.okjike.com/*'],
   cssInjectionMode: 'ui',
   main(ctx) {
+    // --- CLI 模式检测 ---
+    const url = new URL(window.location.href)
+    const isCliMode = url.searchParams.get('jike-export-cli') === 'true'
+
+    if (isCliMode) {
+      setTimeout(() => runCliExport(), 2000)
+    }
+
     browser.runtime.onMessage.addListener(async function (message: IMessage) {
       const { type, config, isVerified, openInNewTab, topicMaxItems } = message
       const { startDate: startDateStr, endDate: endDateStr, fileType } = config
@@ -126,6 +138,95 @@ export default defineContentScript({
   },
 })
 
+// --- CLI 自动导出 ---
+async function runCliExport() {
+  const url = new URL(window.location.href)
+  const mode = url.searchParams.get('mode') || 'incremental'
+
+  // 从 URL 提取 username
+  const urlParts = window.location.pathname.split('/')
+  const username = urlParts[urlParts.length - 1]
+
+  if (!username) {
+    document.title = 'JIKE_EXPORT_ERROR: no_username'
+    return
+  }
+
+  try {
+    const accessToken = localStorage.getItem('JK_ACCESS_TOKEN')
+    if (!accessToken) {
+      document.title = 'JIKE_EXPORT_ERROR: no_token'
+      return
+    }
+
+    // 读取上次导出的最新 ID（增量用）
+    const storageKey = `jike_cli_last_id_${username}`
+    const stored = await browser.storage.local.get(storageKey)
+    const lastExportedId: string | null =
+      mode === 'full' ? null : (stored[storageKey] as string) || null
+
+    // 拉取全部数据
+    const allData = await fetchAllJikeData(username, accessToken, 20, null, undefined, true)
+
+    if (!allData || allData.length === 0) {
+      document.title = 'JIKE_EXPORT_DONE: 0'
+      window.close()
+      return
+    }
+
+    // 增量过滤：API 返回按时间倒序，找到 lastExportedId 截断
+    let dataToExport = allData
+    if (lastExportedId) {
+      const cutoffIndex = allData.findIndex((item: any) => item.id === lastExportedId)
+      if (cutoffIndex > 0) {
+        dataToExport = allData.slice(0, cutoffIndex)
+      } else if (cutoffIndex === 0) {
+        // 没有新数据
+        document.title = 'JIKE_EXPORT_DONE: 0'
+        window.close()
+        return
+      }
+      // cutoffIndex === -1 意味着没找到旧 ID，导出全部（可能旧数据已被删除）
+    }
+
+    // 走现有管线
+    const memoResultList = convertApiDataToMemoFormat({ data: dataToExport })
+
+    const cliConfig: IExportConfig = {
+      fileType: ExportTypeEnum.MD,
+      isSingleFile: true,
+      isDownloadImage: false,
+      isFileNameAddTimestamp: false,
+      contentOrder: ContentOrderTypeEnum.DESC,
+      fastDateRange: FastDateRangeEnum.ALL,
+      startDate: null,
+      endDate: null,
+      moreFilter: null,
+    }
+
+    const filteredMemoList = memoListFilter(memoResultList, true, cliConfig)
+    const parsedMemoList = contentParse(filteredMemoList, cliConfig)
+
+    // 导出文件，文件名用 screenName（真实用户名）
+    const screenName = allData[0]?.user?.screenName || username
+    const fileName = `jike-cli-${screenName}`
+    handleExportFile(parsedMemoList, fileName, cliConfig)
+
+    // 保存最新 ID
+    if (allData.length > 0) {
+      await browser.storage.local.set({ [storageKey]: allData[0].id })
+    }
+
+    document.title = `JIKE_EXPORT_DONE: ${parsedMemoList.length}`
+
+    // 延迟关闭，给文件下载留时间
+    setTimeout(() => window.close(), 3000)
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error)
+    document.title = `JIKE_EXPORT_ERROR: ${reason}`
+  }
+}
+
 // 创建可以动态更新提示的loading组件
 function createDynamicLoading(ctx: any) {
   let tipUpdateCallback: ((tip: string) => void) | null = null
@@ -197,7 +298,7 @@ async function fetchAllJikeData(
   limit = 20,
   startDate?: dayjs.Dayjs | null,
   updateTip?: (tip: string) => void,
-  isVerified: boolean = true, // 添加isVerified参数，默认为true
+  isVerified: boolean = true,
   topicId?: string,
   topicMaxItems?: number
 ): Promise<any[]> {
@@ -208,7 +309,7 @@ async function fetchAllJikeData(
 
   const isTopicMode = !!topicId
 
-  // 圈子模式使用 topicMaxItems（默认200，最大1000），用户模式未验证限制60条
+  // 圈子模式使用 topicMaxItems，用户模式未验证限制60条
   const MAX_ITEMS = isTopicMode
     ? Math.min(topicMaxItems || 200, 1000)
     : !isVerified
@@ -256,13 +357,7 @@ async function fetchAllJikeData(
 
     try {
       // 获取当前页数据
-      const response = await fetchJikeData(
-        username,
-        accessToken,
-        limit,
-        loadMoreKey,
-        topicId
-      )
+      const response = await fetchJikeData(username, accessToken, limit, loadMoreKey, topicId)
 
       // 检查响应是否有效
       if (!response || !response.data || !Array.isArray(response.data)) {
